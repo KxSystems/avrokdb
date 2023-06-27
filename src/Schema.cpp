@@ -161,13 +161,6 @@ avro::Schema DeriveSimpleSchema(const std::string name, K data)
     return avro::BytesSchema();
   case KC:
     return avro::StringSchema();
-  case KS:
-  {
-    auto enum_schema = avro::EnumSchema(name);
-    for (auto i = 0; i < data->n; ++i)
-      enum_schema.addSymbol(kS(data)[i]);
-    return enum_schema;
-  }
   case 0:
   {
     if (data->n == 0)
@@ -242,18 +235,112 @@ K ReadJsonSchema(K filename)
   KDB_EXCEPTION_CATCH;
 }
 
-K PrintSchema(K schema)
+K GetSchema(K schema)
 {
   KDB_EXCEPTION_TRY;
 
   auto avro_schema = GetAvroSchema(schema);
-  std::cout << avro_schema->toJson(true) << std::endl;
+  const auto& schema_str = avro_schema->toJson(true);
+  K result = ktn(KC, schema_str.length());
+  std::memcpy(kG(result), schema_str.data(), schema_str.length());
 
-  return K(0);
+  return result;
 
   KDB_EXCEPTION_CATCH;
 }
 
+K GetBasicSchema(K unused)
+{
+  const char* basicSchemas[] = {
+    "\"null\"",
+    "\"boolean\"",
+    "\"int\"",
+    "\"long\"",
+    "\"float\"",
+    "\"double\"",
+    "\"bytes\"",
+    "\"string\"",
+
+    // Primitive types - longer
+    R"({ "type": "null" })",
+    R"({ "type": "boolean" })",
+    R"({ "type": "int" })",
+    R"({ "type": "long" })",
+    R"({ "type": "float" })",
+    R"({ "type": "double" })",
+    R"({ "type": "bytes" })",
+    R"({ "type": "string" })",
+
+    // Record
+    R"({"type":"record","name":"Test","doc":"Doc_string","fields":[]})",
+    "{\"type\":\"record\",\"name\":\"Test\",\"fields\":"
+    "[{\"name\":\"f\",\"type\":\"long\"}]}",
+    "{\"type\":\"record\",\"name\":\"Test\",\"fields\":"
+    "[{\"name\":\"f1\",\"type\":\"long\",\"doc\":\"field_doc\"},"
+    "{\"name\":\"f2\",\"type\":\"int\"}]}",
+    "{\"type\":\"error\",\"name\":\"Test\",\"fields\":"
+    "[{\"name\":\"f1\",\"type\":\"long\"},"
+    "{\"name\":\"f2\",\"type\":\"int\"}]}",
+
+    // Recursive.
+    "{\"type\":\"record\",\"name\":\"LongList\","
+    "\"fields\":[{\"name\":\"value\",\"type\":\"long\",\"doc\":\"recursive_doc\"},"
+    "{\"name\":\"next\",\"type\":[\"LongList\",\"null\"]}]}",
+    // Enum
+    R"({"type":"enum","doc":"enum_doc","name":"Test","symbols":["A","B"]})",
+
+    // Array
+    R"({"type":"array","doc":"array_doc","items":"long"})",
+    "{\"type\":\"array\",\"items\":{\"type\":\"enum\","
+    "\"name\":\"Test\",\"symbols\":[\"A\",\"B\"]}}",
+
+    // Map
+    R"({"type":"map","doc":"map_doc","values":"long"})",
+    "{\"type\":\"map\",\"values\":{\"type\":\"enum\", "
+    "\"name\":\"Test\",\"symbols\":[\"A\",\"B\"]}}",
+
+    // Union
+    R"(["string","null","long"])",
+
+    // Fixed
+    R"({"type":"fixed","doc":"fixed_doc","name":"Test","size":1})",
+    "{\"type\":\"fixed\",\"name\":\"MyFixed\","
+    "\"namespace\":\"org.apache.hadoop.avro\",\"size\":1}",
+    R"({"type":"fixed","name":"Test","size":1})",
+    R"({"type":"fixed","name":"Test","size":1})",
+
+    // Extra attributes (should be ignored)
+    R"({"type": "null", "extra attribute": "should be ignored"})",
+    R"({"type": "boolean", "extra1": 1, "extra2": 2, "extra3": 3})",
+    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
+    "[{\"name\": \"f\",\"type\": \"long\"}], \"extra attribute\": 1}",
+    "{\"type\": \"enum\", \"name\": \"Test\", \"symbols\": [\"A\", \"B\"],"
+    "\"extra attribute\": 1}",
+    R"({"type": "array", "items": "long", "extra attribute": 1})",
+    R"({"type": "map", "values": "long", "extra attribute": 1})",
+    R"({"type": "fixed", "name": "Test", "size": 1, "extra attribute": 1})",
+
+    // defaults
+    // default double -  long
+    R"({ "name":"test", "type": "record", "fields": [ {"name": "double","type": "double","default" : 2 }]})",
+    // default double - double
+    R"({ "name":"test", "type": "record", "fields": [ {"name": "double","type": "double","default" : 1.2 }]})",
+
+    // namespace with '$' in it.
+    "{\"type\":\"record\",\"name\":\"Test\",\"namespace\":\"a.b$\",\"fields\":"
+    "[{\"name\":\"f\",\"type\":\"long\"}]}",
+
+    // Custom attribute(s) for field in record
+    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
+        "[{\"name\": \"f1\",\"type\": \"long\",\"extra field\": \"1\"}]}",
+    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
+        "[{\"name\": \"f1\",\"type\": \"long\","
+        "\"extra field1\": \"1\",\"extra field2\": \"2\"}]}"
+  };
+
+  //avro::compileJsonSchemaFromString(std::string(basicSchemas));
+  return (K)0;
+}
 
 using namespace avro;
 

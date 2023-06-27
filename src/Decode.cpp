@@ -35,8 +35,9 @@ K decodeArray(const avro::GenericArray& array_datum)
   {
     for (auto i : array_data) {
       const auto& bytes = i.value<std::vector<uint8_t>>();
-      K result = ktn(KG, bytes.size());
-      std::memcpy(kG(result), bytes.data(), bytes.size());
+      K k_bytes = ktn(KG, bytes.size());
+      std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+      kK(result)[index++] = k_bytes;
     }
     break;
   }
@@ -56,8 +57,9 @@ K decodeArray(const avro::GenericArray& array_datum)
   {
     for (auto i : array_data) {
       const auto& fixed = i.value<avro::GenericFixed>().value();
-      K result = ktn(KG, fixed.size());
-      std::memcpy(kG(result), fixed.data(), fixed.size());
+      K k_fixed = ktn(KG, fixed.size());
+      std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
+      kK(result)[index++] = k_fixed;
     }
     break;
   }
@@ -70,13 +72,13 @@ K decodeArray(const avro::GenericArray& array_datum)
   case avro::AVRO_INT:
   {
     for (auto i : array_data)
-      kI(result)[index++] = i.value<int>();
+      kI(result)[index++] = i.value<int32_t>();
     break;
   }
   case avro::AVRO_LONG:
   {
     for (auto i : array_data)
-      kJ(result)[index++] = i.value<long>();
+      kJ(result)[index++] = i.value<int64_t>();
     break;
   }
   case avro::AVRO_NULL:
@@ -92,8 +94,9 @@ K decodeArray(const avro::GenericArray& array_datum)
   {
     for (auto i : array_data) {
       const auto& string = i.value<std::string>();
-      K result = ktn(KC, string.length());
-      std::memcpy(kG(result), string.c_str(), string.length());
+      K k_string = ktn(KC, string.length());
+      std::memcpy(kG(k_string), string.c_str(), string.length());
+      kK(result)[index++] = k_string;
     }
     break;
   }

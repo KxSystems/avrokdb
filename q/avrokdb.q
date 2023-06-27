@@ -9,7 +9,8 @@ init:`avrokdb 2:(`InitialiseAvroKdb; 1);
 
 deriveSchema:`avrokdb 2:(`DeriveSchema; 1);
 readJsonSchema:`avrokdb 2:(`ReadJsonSchema; 1);
-printSchema:`avrokdb 2:(`PrintSchema; 1);
+getSchema:`avrokdb 2:(`GetSchema; 1);
+printSchema:{-1 getSchema[x];};
 getTestSchema:`avrokdb 2:(`GetTestSchema; 1);
 
 encode:`avrokdb 2:(`encode; 2);

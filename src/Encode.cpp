@@ -40,7 +40,7 @@ void encodeSimple(const std::string& field, avro::GenericDatum& simple, K value)
     TYPE_CHECK_FIXED(fixed_size != value->n, field, fixed_size, value->n);
 
     std::vector<uint8_t> fixed;
-    fixed.reserve(value->n);
+    fixed.resize(value->n);
     std::memcpy(fixed.data(), kG(value), value->n);
     avro_fixed.value() = fixed;
     break;
@@ -116,7 +116,7 @@ void encodeArray(const std::string& field, avro::GenericArray& next, K data)
       TYPE_CHECK_FIXED(fixed_size != k_bytes->n, field, fixed_size, k_bytes->n);
 
       std::vector<uint8_t> fixed;
-      fixed.reserve(k_bytes->n);
+      fixed.resize(k_bytes->n);
       std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
       array_data.push_back(avro::GenericDatum(array_schema->leafAt(0), avro::GenericFixed(array_schema->leafAt(0), fixed)));
     }
@@ -218,7 +218,7 @@ void encodeRecord(avro::GenericRecord& record, K data)
       continue;
 
     auto& next = record.field(key);
-    TYPE_CHECK_DATUM(GetKdbType(next) == value->t, key, avro::toString(next.type()), GetKdbType(next), value->t);
+    TYPE_CHECK_DATUM(GetKdbType(next) != value->t, key, avro::toString(next.type()), GetKdbType(next), value->t);
 
     switch (next.type()) {
     case avro::AVRO_RECORD:
