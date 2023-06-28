@@ -17,15 +17,15 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
 void encodeRecord(const std::string& field, avro::GenericRecord& record, K data);
 void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data);
 
-void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K data, bool use_real)
+void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K data, bool decompose_union)
 {
   avro::Type avro_type;
-  if (use_real)
+  if (!decompose_union)
     avro_type = GetRealType(avro_datum);
   else
     avro_type = avro_datum.type();
 
-  TYPE_CHECK_DATUM(field, avro::toString(avro_type), GetKdbType(avro_datum, use_real), data->t);
+  TYPE_CHECK_DATUM(field, avro::toString(avro_type), GetKdbType(avro_datum, decompose_union), data->t);
 
   switch (avro_type) {
   case avro::AVRO_BOOL:
@@ -253,7 +253,7 @@ void encodeRecord(const std::string& field, avro::GenericRecord& record, K data)
       continue;
 
     auto& next = record.field(key);
-    encodeDatum(key, next, value, true);
+    encodeDatum(key, next, value, false);
   }
 }
 
@@ -266,14 +266,14 @@ void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K dat
 
   // Even though a union branch is a size_t we're going to represent it as a -KH
   // Realistically no one will even have a union with > 16K branches
-  // This avoids type promotion problems where a long union where (0; 123) would become (0 123)
+  // This avoids type promotion problems with a long union where (0; 123) would become (0 123)
   // Don't want yet to have to introduce yet more (::)
   // Avro don't have a short int type so it cannot be promoted
   if (k_branch->t != -KH)
     throw TypeCheck("Union branch not -5h");
 
   avro_union.selectBranch(k_branch->h);
-  encodeDatum(field, avro_union, k_datum, false);
+  encodeDatum(field, avro_union, k_datum, true);
 }
 
 K encode(K schema, K data)
@@ -283,7 +283,7 @@ K encode(K schema, K data)
   auto avro_schema = GetAvroSchema(schema);
 
   auto datum = avro::GenericDatum(*avro_schema.get());
-  encodeDatum("", datum, data, true);
+  encodeDatum("", datum, data, false);
 
   auto encoder = avro::validatingEncoder(*avro_schema.get(), avro::binaryEncoder());
 

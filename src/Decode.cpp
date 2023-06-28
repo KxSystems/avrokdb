@@ -133,10 +133,10 @@ K decodeArray(const avro::GenericArray& array_datum)
   return result;
 }
 
-K decodeDatum(const avro::GenericDatum& datum, bool use_real)
+K decodeDatum(const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
-  if (use_real)
+  if (!decompose_union)
     avro_type = GetRealType(datum);
   else
     avro_type = datum.type();
@@ -204,7 +204,7 @@ K decodeRecord(const avro::GenericRecord& record)
     const auto& next = record.fieldAt(i);
     const auto& name = record.schema()->nameAt(i);
     kS(keys)[index] = ss((S)name.c_str());
-    kK(values)[index] = decodeDatum(next, true);
+    kK(values)[index] = decodeDatum(next, false);
     ++index;
   }
 
@@ -215,7 +215,7 @@ K decodeUnion(const avro::GenericDatum& avro_union)
 {
   K result = ktn(0, 2);
   kK(result)[0] = kh((I)avro_union.unionBranch());
-  kK(result)[1] = decodeDatum(avro_union, false);
+  kK(result)[1] = decodeDatum(avro_union, true);
 
   return result;
 }
@@ -243,7 +243,7 @@ K decode(K schema, K data)
   reader.read(datum);
   reader.drain();
 
-  return decodeDatum(datum, true);
+  return decodeDatum(datum, false);
 
   KDB_EXCEPTION_CATCH;
 }

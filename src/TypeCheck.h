@@ -135,10 +135,10 @@ inline KdbType GetKdbSimpleType(avro::Type type)
   }
 }
 
-inline KdbType GetKdbType(const avro::GenericDatum& datum, bool use_real)
+inline KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
-  if (use_real)
+  if (!decompose_union)
     avro_type = GetRealType(datum);
   else
     avro_type = datum.type();
