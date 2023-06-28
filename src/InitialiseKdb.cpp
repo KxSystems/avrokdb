@@ -1,6 +1,7 @@
 #include <cstdlib>
 
 #include <avro/ValidSchema.hh>
+#include <avro/GenericDatum.hh>
 
 #include "InitialiseKdb.h"
 #include "Schema.h"

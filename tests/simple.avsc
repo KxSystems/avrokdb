@@ -41,6 +41,10 @@
         {
             "name": "j",
             "type": "string"
+        },
+        {
+            "name": "k",
+            "type": ["string","null","long"]
         }
     ]
 }

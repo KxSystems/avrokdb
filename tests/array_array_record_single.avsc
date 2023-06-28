@@ -1,0 +1,29 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "record",
+                        "name": "children",
+                        "fields": [
+                            {
+                                "name": "b",
+                                "type": "boolean"
+                            },
+                            {
+                                "name": "c",
+                                "type": "bytes"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

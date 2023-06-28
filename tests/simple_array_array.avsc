@@ -41,6 +41,10 @@
         {
             "name": "j",
             "type": { "type": "array", "items": { "type": "array", "items": "string" } }
+        },
+        {
+            "name": "k",
+            "type": { "type": "array", "items": { "type": "array", "items": ["string","null","long"] } }
         }
     ]
 }

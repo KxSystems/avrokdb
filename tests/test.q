@@ -1,54 +1,107 @@
 \l q/avrokdb.q
 
+-1 "<----- Single simple type ----->";
+sc:.avro.readJsonSchema["tests/single_simple.avsc"];
+input:`AA;
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Single array type ----->";
+sc:.avro.readJsonSchema["tests/single_array.avsc"];
+input:(0x00112233;0x44112233);
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Record of simple types ----->";
 sc:.avro.readJsonSchema["tests/simple.avsc"];
-input:(``a`b`c`d`e`f`g`h`i`j)!(::;0b;0x0011;1.1;`AA;0x00112233;2.2e;3i;4;::;"aa");
+input:(``a`b`c`d`e`f`g`h`i`j`k)!(::;0b;0x0011;1.1;`AA;0x00112233;2.2e;3i;4;::;"aa";(0h;"abc"));
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
 show input~output;
 
+-1 "<----- Record of simple array types ----->";
 sc:.avro.readJsonSchema["tests/simple_array.avsc"];
-input:(``a`b`c`d`e`f`g`h`i`j)!(::;01b;(0x0011;0x1122);1.1 2.2;`AA`BB;(0x00112233;0x44112233);2.2 3.3e;3 4i;4 5;(::;::);("aa";"bb"));
+input:(``a`b`c`d`e`f`g`h`i`j`k)!(::;01b;(0x0011;0x1122);1.1 2.2;`AA`BB;(0x00112233;0x44112233);2.2 3.3e;3 4i;4 5;(::;::);("aa";"bb");((0h;"cc");(2h;33)));
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
 show input~output;
 
-sc:.avro.readJsonSchema["tests/nested_record.avsc"];
-nested:(``c`d)!(::;1.1;`AA);
-input:(``a`b)!(::;0b;nested);
-serialised:.avro.encode[sc;input];
-output:.avro.decode[sc;serialised];
-show output;
-show input~output;
-
+-1 "<----- Single field nested record ----->";
 sc:.avro.readJsonSchema["tests/nested_record_single.avsc"];
 nested:(``c`d)!(::;1.1;`AA);
 input:(``b)!(::;nested);
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
 show input~output;
 
+-1 "<----- Record including field of nested records ----->";
+sc:.avro.readJsonSchema["tests/nested_record.avsc"];
+nested:(``c`d)!(::;1.1;`AA);
+input:(``a`b)!(::;0b;nested);
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Single field record with array of records ----->";
 sc:.avro.readJsonSchema["tests/array_record_single.avsc"];
-nested:(``b`c)!(::;1b;0x0011)
-input:(``a)!(::;(::;nested;nested))
+nested:(``b`c)!(::;1b;0x0011);
+input:(``a)!(::;(::;nested;nested));
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
 show input~output;
 
+-1 "<----- Record including field of array of records ----->";
 sc:.avro.readJsonSchema["tests/array_record.avsc"];
-nested:(``b`c)!(::;1b;0x0011)
-input:(``a`d)!(::;(::;nested;nested);`AA)
+nested:(``b`c)!(::;1b;0x0011);
+input:(``a`d)!(::;(::;nested;nested);`AA);
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
 show input~output;
 
-sc:.avro.readJsonSchema["tests/simple_array_array.avsc"];
-input:(``a`b`c`d`e`f`g`h`i`j)!(::;enlist 01b;enlist (0x0011;0x1122);enlist 1.1 2.2;enlist `AA`BB;enlist (0x00112233;0x44112233);enlist 2.2 3.3e;enlist 3 4i;enlist 4 5;enlist (::;::);enlist ("aa";"bb"));
+-1 "<----- Record with single field containing array of array of records ----->";
+sc:.avro.readJsonSchema["tests/array_array_record_single.avsc"];
+nested:(``b`c)!(::;1b;0x0011)
+input:(``a)!(::;enlist (::;nested;nested));
 serialised:.avro.encode[sc;input];
 output:.avro.decode[sc;serialised];
 show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Record with array of array simple types fields ----->";
+sc:.avro.readJsonSchema["tests/simple_array_array.avsc"];
+input:(``a`b`c`d`e`f`g`h`i`j`k)!(::;enlist 01b;enlist (0x0011;0x1122);enlist 1.1 2.2;enlist `AA`BB;enlist (0x00112233;0x44112233);enlist 2.2 3.3e;enlist 3 4i;enlist 4 5;enlist (::;::);enlist ("aa";"bb"); enlist ((0h;"cc");(2h;33)));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+
+-1 "<----- Record with fields including array of array of records ----->";
+sc:.avro.readJsonSchema["tests/array_array_record.avsc"];
+nested:(``b`c)!(::;1b;0x0011);
+input:(``a`d)!(::;((::;nested;nested);(::;nested;nested));`AA);
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
 show input~output;

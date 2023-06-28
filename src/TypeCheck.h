@@ -21,7 +21,7 @@ typedef signed char KdbType;
 
 
   // Hierachy of TypeCheck exceptions with each derived type being using for a
-  // specific check when converting from a kdb object to an arow arrow.
+  // specific check when converting from a kdb object to avro.
 class TypeCheck : public std::invalid_argument
 {
 public:
@@ -52,14 +52,6 @@ public:
   {};
 };
 
-class TypeCheckName : public TypeCheck
-{
-public:
-  TypeCheckName(const std::string& field, const std::string& datatype, const std::string& expected, const std::string& received) :
-    TypeCheck("Invalid name, field: '" + field + "', datatype: '" + datatype + "', expected: '" + expected + "', received : '" + received + "'")
-  {};
-};
-
 class TypeCheckUnsupported : public TypeCheck
 {
 public:
@@ -79,10 +71,8 @@ inline KdbType GetKdbArrayType(avro::Type type)
   case avro::AVRO_DOUBLE:
     return KF;
   case avro::AVRO_ENUM:
-    //return 99;
     return KS;
   case avro::AVRO_FIXED:
-    //return 99;
     return 0;
   case avro::AVRO_FLOAT:
     return KE;
@@ -118,10 +108,8 @@ inline KdbType GetKdbSimpleType(avro::Type type)
   case avro::AVRO_DOUBLE:
     return -KF;
   case avro::AVRO_ENUM:
-    //return 99;
     return -KS;
   case avro::AVRO_FIXED:
-    //return 99;
     return KG;
   case avro::AVRO_FLOAT:
     return -KE;
@@ -137,21 +125,28 @@ inline KdbType GetKdbSimpleType(avro::Type type)
     return 99;
   case avro::AVRO_STRING:
     return KC;
+  case avro::AVRO_UNION:
+    return 0;
 
   case avro::AVRO_ARRAY:
-  case avro::AVRO_UNION:
   case avro::AVRO_UNKNOWN:
   default:
     throw TypeCheck("GetKdbSimpleType - unsupported type: " + type);
   }
 }
 
-inline KdbType GetKdbType(const avro::GenericDatum& datum)
+inline KdbType GetKdbType(const avro::GenericDatum& datum, bool use_real)
 {
-  switch (datum.type()) {
-  case avro::AVRO_UNION:
+  avro::Type avro_type;
+  if (use_real)
+    avro_type = GetRealType(datum);
+  else
+    avro_type = datum.type();
+
+  switch (avro_type) {
+  case avro::AVRO_MAP:
   case avro::AVRO_UNKNOWN:
-    throw TypeCheck("GetKdbType - unsupported type: " + datum.type());
+    throw TypeCheck("GetKdbType - unsupported type: " + avro_type);
   case avro::AVRO_ARRAY:
   {
     const auto& avro_array = datum.value<avro::GenericArray>();
@@ -161,6 +156,6 @@ inline KdbType GetKdbType(const avro::GenericDatum& datum)
     return GetKdbArrayType(array_schema->leafAt(0)->type());
   }
   default:
-    return GetKdbSimpleType(datum.type());
+    return GetKdbSimpleType(avro_type);
   }
 }

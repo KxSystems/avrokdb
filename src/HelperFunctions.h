@@ -107,3 +107,10 @@ inline K identity()
   id->g = 0;
   return id;
 }
+
+inline avro::Type GetRealType(const avro::GenericDatum& datum)
+{
+  if (datum.isUnion())
+    return avro::AVRO_UNION;
+  return datum.type();
+}

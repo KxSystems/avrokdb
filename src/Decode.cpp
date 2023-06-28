@@ -13,6 +13,7 @@
 
 
 K decodeRecord(const avro::GenericRecord& record);
+K decodeUnion(const avro::GenericDatum& avro_union);
 
 K decodeArray(const avro::GenericArray& array_datum)
 {
@@ -27,9 +28,6 @@ K decodeArray(const avro::GenericArray& array_datum)
     ++result_len;
   }
   K result = ktn(GetKdbArrayType(array_type), result_len);
-  /*K result = NULL;
-  if (array_type != avro::AVRO_ENUM && array_type != avro::AVRO_FIXED)
-    result = ktn(GetKdbArrayType(array_type), array_data.size());*/
   size_t index = 0;
 
   switch (array_type) {
@@ -57,32 +55,18 @@ K decodeArray(const avro::GenericArray& array_datum)
   }
   case avro::AVRO_ENUM:
   {
-    /*K keys = ktn(KS, 1);
-    kS(keys)[0] = ss((S)array_schema->leafAt(0)->name().simpleName().c_str());
-    K values = ktn(KS, array_data.size());*/
-
     for (auto i : array_data)
-      //kS(values)[index++] = ss((S)i.value<avro::GenericEnum>().symbol().c_str());
       kS(result)[index++] = ss((S)i.value<avro::GenericEnum>().symbol().c_str());
-
-    //result = xD(keys, knk(1, values));
     break;
   }
   case avro::AVRO_FIXED:
   {
-    /*K keys = ktn(KS, 1);
-    kS(keys)[0] = ss((S)array_schema->leafAt(0)->name().simpleName().c_str());
-    K values = ktn(0, array_data.size());*/
-
     for (auto i : array_data) {
       const auto& fixed = i.value<avro::GenericFixed>().value();
       K k_fixed = ktn(KG, fixed.size());
       std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
-      //kK(values)[index++] = k_fixed;
       kK(result)[index++] = k_fixed;
     }
-
-    //result = xD(keys, knk(1, values));
     break;
   }
   case avro::AVRO_FLOAT:
@@ -105,11 +89,8 @@ K decodeArray(const avro::GenericArray& array_datum)
   }
   case avro::AVRO_NULL:
   {
-    for (auto i : array_data) {
-      K id = ka(101);
-      id->g = 0;
-      kK(result)[index++] = id;
-    }
+    for (auto i : array_data)
+      kK(result)[index++] = identity();
     break;
   }
   case avro::AVRO_STRING:
@@ -124,9 +105,7 @@ K decodeArray(const avro::GenericArray& array_datum)
   }
   case avro::AVRO_RECORD:
   {
-    K id = ka(101);
-    id->g = 0;
-    kK(result)[index++] = id;
+    kK(result)[index++] = identity();
     for (auto i : array_data)
       kK(result)[index++] = decodeRecord(i.value<avro::GenericRecord>());
     break;
@@ -137,9 +116,15 @@ K decodeArray(const avro::GenericArray& array_datum)
       kK(result)[index++] = decodeArray(i.value<avro::GenericArray>());
     break;
   }
+  case avro::AVRO_UNION:
+  {
+    for (auto i : array_data)
+      kK(result)[index++] = decodeUnion(i);
+    break;
+  }
+
   case avro::AVRO_MAP:
   case avro::AVRO_SYMBOLIC:
-  case avro::AVRO_UNION:
   case avro::AVRO_UNKNOWN:
   default:
     throw TypeCheck("Unsupported type");
@@ -148,9 +133,15 @@ K decodeArray(const avro::GenericArray& array_datum)
   return result;
 }
 
-K decodeDatum(const avro::GenericDatum& datum)
+K decodeDatum(const avro::GenericDatum& datum, bool use_real)
 {
-  switch (datum.type()) {
+  avro::Type avro_type;
+  if (use_real)
+    avro_type = GetRealType(datum);
+  else
+    avro_type = datum.type();
+
+  switch (avro_type) {
   case avro::AVRO_BOOL:
     return kb(datum.value<bool>());
   case avro::AVRO_BYTES:
@@ -164,29 +155,12 @@ K decodeDatum(const avro::GenericDatum& datum)
     return kf(datum.value<double>());
   case avro::AVRO_ENUM:
     return ks(S(datum.value<avro::GenericEnum>().symbol().c_str()));
-  /* {
-    const auto& avro_enum = datum.value<avro::GenericEnum>();
-    K keys = ktn(KS, 1);
-    kS(keys)[0] = ss((S)avro_enum.schema()->name().simpleName().c_str());
-    K values = ktn(KS, 1);
-    kS(values)[0] = ss((S)avro_enum.symbol().c_str());
-    return xD(keys, values);
-  } */
   case avro::AVRO_FIXED:
   {
     const auto & fixed = datum.value<avro::GenericFixed>().value();
     K result = ktn(KG, fixed.size());
     std::memcpy(kG(result), fixed.data(), fixed.size());
     return result;
-    /*const auto& avro_fixed = datum.value<avro::GenericFixed>();
-    K keys = ktn(KS, 1);
-    kS(keys)[0] = ss((S)avro_fixed.schema()->name().simpleName().c_str());
-    K values = ktn(0, 1);
-    const auto& fixed = avro_fixed.value();
-    K k_fixed = ktn(KG, fixed.size());
-    std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
-    kK(values)[0] = k_fixed;
-    return xD(keys, values);*/  
   }
   case avro::AVRO_FLOAT:
     return ke(datum.value<float>());
@@ -195,11 +169,7 @@ K decodeDatum(const avro::GenericDatum& datum)
   case avro::AVRO_LONG:
     return kj(datum.value<int64_t>());
   case avro::AVRO_NULL:
-  {
-    K id = ka(101);
-    id->g = 0;
-    return id;
-  }
+    return identity();;
   case avro::AVRO_STRING:
   {
     const auto& string = datum.value<std::string>();
@@ -211,10 +181,11 @@ K decodeDatum(const avro::GenericDatum& datum)
     return decodeRecord(datum.value<avro::GenericRecord>());
   case avro::AVRO_ARRAY:
     return decodeArray(datum.value<avro::GenericArray>());
+  case avro::AVRO_UNION:
+    return decodeUnion(datum);
 
   case avro::AVRO_MAP:
   case avro::AVRO_SYMBOLIC:
-  case avro::AVRO_UNION:
   case avro::AVRO_UNKNOWN:
   default:
     throw TypeCheck("Unsupported type");
@@ -233,11 +204,20 @@ K decodeRecord(const avro::GenericRecord& record)
     const auto& next = record.fieldAt(i);
     const auto& name = record.schema()->nameAt(i);
     kS(keys)[index] = ss((S)name.c_str());
-    kK(values)[index] = decodeDatum(next);
+    kK(values)[index] = decodeDatum(next, true);
     ++index;
   }
 
   return xD(keys, values);
+}
+
+K decodeUnion(const avro::GenericDatum& avro_union)
+{
+  K result = ktn(0, 2);
+  kK(result)[0] = kh((I)avro_union.unionBranch());
+  kK(result)[1] = decodeDatum(avro_union, false);
+
+  return result;
 }
 
 K decode(K schema, K data)
@@ -263,7 +243,7 @@ K decode(K schema, K data)
   reader.read(datum);
   reader.drain();
 
-  return decodeDatum(datum);
+  return decodeDatum(datum, true);
 
   KDB_EXCEPTION_CATCH;
 }
