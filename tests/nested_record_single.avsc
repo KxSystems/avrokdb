@@ -1,0 +1,24 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "b",
+            "type": {
+                "type": "record",
+                "name": "myrecord",
+                "fields": [
+                    {
+                        "name": "c",
+                        "type": "double"
+                    },
+                    {
+                        "name": "d",
+                        "type": { "type": "enum", "name": "myenum", "symbols": ["AA", "BB", "CC"] }
+                    }
+                ]
+            }
+        }
+    ]
+}
+

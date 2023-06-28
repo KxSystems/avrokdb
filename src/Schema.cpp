@@ -188,11 +188,11 @@ avro::Schema DeriveRecordSchema(const std::string name, K data)
   K keys = kK(data)[0];
   K values = kK(data)[1];
 
-  assert(keys->n == values->n);
   if (keys->t != KS)
     throw TypeCheck("Record keys not 11h");
   if (values->t != 0)
     throw TypeCheck("Record values not 0h");
+  assert(keys->n == values->n);
 
   for (auto i = 0; i < keys->n; ++i) {
     std::string field_name = kS(keys)[i];

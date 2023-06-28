@@ -49,3 +49,61 @@ inline const std::string GetKdbString(K str)
     return krr(error_msg);  \
   }
 
+
+/////////////////
+// FLIP TABLES //
+/////////////////
+
+inline K DictFromTable(K table, size_t index)
+{
+  assert(table->t == 98);
+  
+  K keys = kK(table->k)[0];
+  K values = kK(table->k)[1];
+
+  //assert(values->n == 1);
+  //values = kK(values)[0];
+
+  //assert(keys->n == values->n);
+
+  K result = ktn(0, keys->n);
+  std::memset(kK(result), 0, sizeof(K) * keys->n);
+
+  for (auto i = 0; i < values->n; ++i) {
+    K input = kK(values)[i];
+    switch (input->t) {
+    case KB:
+      kK(result)[i] = kb(kG(input)[index]);
+      break;
+    case KI:
+      kK(result)[i] = ki(kI(input)[index]);
+      break;
+    case KJ:
+      kK(result)[i] = kj(kJ(input)[index]);
+      break;
+    case KE:
+      kK(result)[i] = ke(kE(input)[index]);
+      break;
+    case KF:
+      kK(result)[i] = kf(kF(input)[index]);
+      break;
+    case KS:
+      kK(result)[i] = ks(kS(input)[index]);
+      break;
+    case 0:
+      kK(result)[i] = r1(kK(input)[index]);
+      break;
+    default:
+      throw std::invalid_argument("DictFromTable unsupported type: " + input->t);
+    }
+  }
+
+  return xD(r1(keys), result);
+}
+
+inline K identity()
+{
+  K id = ka(101);
+  id->g = 0;
+  return id;
+}

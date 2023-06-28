@@ -8,12 +8,14 @@ typedef signed char KdbType;
 // Set of macros to assist with performing the type checks such the arguments
 // required to generate the exception message are not evaluated unless the
 // condition is met
-#define TYPE_CHECK_DATUM(condition, field, datatype, expected, received) \
-  if (condition) throw TypeCheckDatum(field, datatype, expected, received);
-#define TYPE_CHECK_ARRAY(condition, field, datatype, expected, received) \
-  if (condition) throw TypeCheckArray(field, datatype, expected, received);
-#define TYPE_CHECK_FIXED(condition, field, expected, received) \
-  if (condition) TypeCheckFixed(field, expected, received);
+#define TYPE_CHECK_DATUM(field, datatype, expected, received) \
+  if (expected != received) throw TypeCheckDatum(field, datatype, expected, received);
+#define TYPE_CHECK_ARRAY(field, datatype, expected, received) \
+  if (expected != received) throw TypeCheckArray(field, datatype, expected, received);
+#define TYPE_CHECK_FIXED(field, expected, received) \
+  if (expected != received) throw TypeCheckFixed(field, expected, received);
+#define TYPE_CHECK_NAME(field, datatype, expected, received) \
+  if (expected != received) throw TypeCheckName(field, datatype, expected, received);
 #define TYPE_CHECK_UNSUPPORTED(field, datatype) \
   throw TypeCheckUnsupported(field, datatype);
 
@@ -50,6 +52,14 @@ public:
   {};
 };
 
+class TypeCheckName : public TypeCheck
+{
+public:
+  TypeCheckName(const std::string& field, const std::string& datatype, const std::string& expected, const std::string& received) :
+    TypeCheck("Invalid name, field: '" + field + "', datatype: '" + datatype + "', expected: '" + expected + "', received : '" + received + "'")
+  {};
+};
+
 class TypeCheckUnsupported : public TypeCheck
 {
 public:
@@ -69,8 +79,10 @@ inline KdbType GetKdbArrayType(avro::Type type)
   case avro::AVRO_DOUBLE:
     return KF;
   case avro::AVRO_ENUM:
+    //return 99;
     return KS;
   case avro::AVRO_FIXED:
+    //return 99;
     return 0;
   case avro::AVRO_FLOAT:
     return KE;
@@ -106,8 +118,10 @@ inline KdbType GetKdbSimpleType(avro::Type type)
   case avro::AVRO_DOUBLE:
     return -KF;
   case avro::AVRO_ENUM:
+    //return 99;
     return -KS;
   case avro::AVRO_FIXED:
+    //return 99;
     return KG;
   case avro::AVRO_FLOAT:
     return -KE;
