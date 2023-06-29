@@ -1,0 +1,50 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": { "type": "map", "values": "boolean" }
+        },
+        {
+            "name": "b",
+            "type": { "type": "map", "values": "bytes" }
+        },
+        {
+            "name": "c",
+            "type": { "type": "map", "values": "double" }
+        },
+        {
+            "name": "d",
+            "type": { "type": "map", "values": { "type": "enum", "name": "myenum", "symbols": ["AA", "BB", "CC"] } }
+        },
+        {
+            "name": "e",
+            "type": { "type": "map", "values": { "type": "fixed", "name": "myfixed", "size": 4 } }
+        },
+        {
+            "name": "f",
+            "type": { "type": "map", "values": "float" }
+        },
+        {
+            "name": "g",
+            "type": { "type": "map", "values": "int" }
+        },
+        {
+            "name": "h",
+            "type": { "type": "map", "values": "long" }
+        },
+        {
+            "name": "i",
+            "type": { "type": "map", "values": "null" }
+        },
+        {
+            "name": "j",
+            "type": { "type": "map", "values": "string" }
+        },
+        {
+            "name": "k",
+            "type": { "type": "map", "values": ["string","null","long"] }
+        }
+    ]
+}

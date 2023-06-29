@@ -12,6 +12,8 @@ typedef signed char KdbType;
   if (expected != received) throw TypeCheckDatum(field, datatype, expected, received);
 #define TYPE_CHECK_ARRAY(field, datatype, expected, received) \
   if (expected != received) throw TypeCheckArray(field, datatype, expected, received);
+#define TYPE_CHECK_MAP(field, datatype, expected, received) \
+  if (expected != received) throw TypeCheckMap(field, datatype, expected, received);
 #define TYPE_CHECK_FIXED(field, expected, received) \
   if (expected != received) throw TypeCheckFixed(field, expected, received);
 #define TYPE_CHECK_NAME(field, datatype, expected, received) \
@@ -41,6 +43,14 @@ class TypeCheckArray : public TypeCheck
 public:
   TypeCheckArray(const std::string& field, const std::string& datatype, int expected, int received) :
     TypeCheck("Invalid array datum, field: '" + field + "', array datatype: '" + datatype + "', expected: " + std::to_string(expected) + ", received: " + std::to_string(received))
+  {};
+};
+
+class TypeCheckMap : public TypeCheck
+{
+public:
+  TypeCheckMap(const std::string& field, const std::string& datatype, int expected, int received) :
+    TypeCheck("Invalid map datum, field: '" + field + "', map datatype: '" + datatype + "', expected: " + std::to_string(expected) + ", received: " + std::to_string(received))
   {};
 };
 
@@ -92,6 +102,7 @@ inline KdbType GetKdbArrayType(avro::Type type)
     return 0;
   case avro::AVRO_ARRAY:
     return 0;
+  case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
     throw TypeCheck("GetKdbArrayType - unsupported type: " + type);
@@ -129,6 +140,7 @@ inline KdbType GetKdbSimpleType(avro::Type type)
     return 0;
 
   case avro::AVRO_ARRAY:
+  case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
     throw TypeCheck("GetKdbSimpleType - unsupported type: " + type);
@@ -144,7 +156,7 @@ inline KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
     avro_type = datum.type();
 
   switch (avro_type) {
-  case avro::AVRO_MAP:
+  case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
     throw TypeCheck("GetKdbType - unsupported type: " + avro_type);
   case avro::AVRO_ARRAY:

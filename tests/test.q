@@ -105,3 +105,40 @@ output:.avro.decode[sc;serialised];
 show output;
 -1 "<----- Result ----->";
 show input~output;
+
+-1 "<----- Record of simple map types ----->";
+sc:.avro.readJsonSchema["tests/simple_map.avsc"];
+input:(``a`b`c`d`e`f`g`h`i`j`k)!(::;(`y`z)!01b;(`y`z)!(0x0011;0x1122);(`y`z)!1.1 2.2;(`y`z)!`AA`BB;(`y`z)!(0x00112233;0x44112233);(`y`z)!2.2 3.3e;(`y`z)!3 4i;(`y`z)!4 5;(`y`z)!(::;::);(`y`z)!("aa";"bb");(`y`z)!((0h;"cc");(2h;33)));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Record of arrays of maps ----->";
+sc:.avro.readJsonSchema["tests/simple_array_map.avsc"];
+input:(``b`c`k)!(::;(::;(`y`z)!(0x0011;0x1122);(`y`z)!(0x0011;0x1122));(::;(`y`z)!1.1 2.2;(`y`z)!1.1 2.2);(::;((`y`z)!((0h;"cc");(2h;33)));((`y`z)!((0h;"cc");(2h;33)))));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Record of map of arrays ----->";
+sc:.avro.readJsonSchema["tests/simple_map_array.avsc"];
+input:(``b`c`k)!(::;(`a`b)!((0x0011;0x223344);(0x0011;0x223344));((`c`d)!((1.1 2.2);(1.1 2.2)));(`f`h)!(((0h;"aa");(2h;123));((0h;"aa");(2h;123))));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+
+-1 "<----- Record of map of maps ----->";
+sc:.avro.readJsonSchema["tests/simple_map_map.avsc"];
+input:(``b`c`k)!(::;((``a`b)!(::;(`i`j)!(0x0011;0x223344);(`k`l)!(0x0011;0x223344)));((``c`d)!(::;((`m`n)!(1.1 2.2));(`o`p)!(1.1 2.2)));((``f`h)!(::;(`q`r)!((0h;"aa");(2h;123));(`s`t)!((0h;"aa");(2h;123)))));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
+

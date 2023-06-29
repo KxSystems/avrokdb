@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "b",
+            "type": { "type": "map", "values": { "type": "map", "values": "bytes" } }
+        },
+        {
+            "name": "c",
+            "type": { "type": "map", "values": { "type": "map", "values": "double" } }
+        },
+        {
+            "name": "k",
+            "type": { "type": "map", "values": { "type": "map", "values": ["string","null","long"] } }
+        }
+    ]
+}
