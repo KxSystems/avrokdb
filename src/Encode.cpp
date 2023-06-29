@@ -258,11 +258,8 @@ void encodeRecord(const std::string& field, avro::GenericRecord& record, K data)
 {
   K keys = kK(data)[0];
   K values = kK(data)[1];
-  if (keys->t != KS)
-    throw TypeCheck("Record keys not 11h");
-
-  if (values->t != 0)
-    throw TypeCheck("Record values not 0h");
+  TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_RECORD), "dict keys", KS, keys->t);
+  TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_RECORD), "dict values", 0, values->t);
   assert(keys->n == values->n);
 
   for (auto i = 0; i < keys->n; ++i) {
@@ -280,8 +277,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 {
   K keys = kK(data)[0];
   K values = kK(data)[1];
-  if (keys->t != KS)
-    throw TypeCheck("Map keys not 11h");
+  TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_MAP), "dict keys", KS, keys->t);
   assert(keys->n == values->n);
 
   assert(avro_map.schema()->leaves() == 2);
@@ -435,8 +431,8 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 
 void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data)
 {
-  if (data->n != 2)
-    throw TypeCheck("Union length not 2");
+  TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_UNION), "mixed list length", 2, data->n);
+
   K k_branch = kK(data)[0];
   K k_datum = kK(data)[1];
 
@@ -445,8 +441,7 @@ void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K dat
   // This avoids type promotion problems with a long union where (0; 123) would become (0 123)
   // Don't want yet to have to introduce yet more (::)
   // Avro don't have a short int type so it cannot be promoted
-  if (k_branch->t != -KH)
-    throw TypeCheck("Union branch not -5h");
+  TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_UNION), "mixed list[0] branch selector", -KH, k_branch->t);
 
   avro_union.selectBranch(k_branch->h);
   encodeDatum(field, avro_union, k_datum, true);

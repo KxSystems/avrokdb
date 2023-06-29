@@ -12,11 +12,11 @@
 #include "TypeCheck.h"
 
 
-K decodeMap(const avro::GenericMap& avro_map);
-K decodeRecord(const avro::GenericRecord& record);
-K decodeUnion(const avro::GenericDatum& avro_union);
+K decodeMap(const std::string& field, const avro::GenericMap& avro_map);
+K decodeRecord(const std::string& field, const avro::GenericRecord& record);
+K decodeUnion(const std::string& field, const avro::GenericDatum& avro_union);
 
-K decodeArray(const avro::GenericArray& array_datum)
+K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
 {
   auto array_schema = array_datum.schema();
   assert(array_schema->leaves() == 1);
@@ -108,39 +108,39 @@ K decodeArray(const avro::GenericArray& array_datum)
   {
     kK(result)[index++] = identity();
     for (auto i : array_data)
-      kK(result)[index++] = decodeRecord(i.value<avro::GenericRecord>());
+      kK(result)[index++] = decodeRecord(field, i.value<avro::GenericRecord>());
     break;
   }
   case avro::AVRO_ARRAY:
   {
     for (auto i : array_data)
-      kK(result)[index++] = decodeArray(i.value<avro::GenericArray>());
+      kK(result)[index++] = decodeArray(field, i.value<avro::GenericArray>());
     break;
   }
   case avro::AVRO_UNION:
   {
     for (auto i : array_data)
-      kK(result)[index++] = decodeUnion(i);
+      kK(result)[index++] = decodeUnion(field, i);
     break;
   }
   case avro::AVRO_MAP:
   {
     kK(result)[index++] = identity();
     for (auto i : array_data)
-      kK(result)[index++] = decodeMap(i.value<avro::GenericMap>());
+      kK(result)[index++] = decodeMap(field, i.value<avro::GenericMap>());
     break;
   }
 
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
-    throw TypeCheck("Unsupported type");
+    TYPE_CHECK_UNSUPPORTED_LEAF(field, avro::toString(avro::AVRO_ARRAY), avro::toString(array_type));
   }
 
   return result;
 }
 
-K decodeMap(const avro::GenericMap& map_datum)
+K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
 {
   auto map_schema = map_datum.schema();
   assert(map_schema->leaves() == 2);
@@ -253,7 +253,7 @@ K decodeMap(const avro::GenericMap& map_datum)
     kK(values)[index++] = identity();
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeRecord(i.second.value<avro::GenericRecord>());
+      kK(values)[index++] = decodeRecord(field, i.second.value<avro::GenericRecord>());
     }
     break;
   }
@@ -261,7 +261,7 @@ K decodeMap(const avro::GenericMap& map_datum)
   {
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeArray(i.second.value<avro::GenericArray>());
+      kK(values)[index++] = decodeArray(field, i.second.value<avro::GenericArray>());
     }
     break;
   }
@@ -269,7 +269,7 @@ K decodeMap(const avro::GenericMap& map_datum)
   {
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeUnion(i.second);
+      kK(values)[index++] = decodeUnion(field, i.second);
     }
     break;
   }
@@ -279,7 +279,7 @@ K decodeMap(const avro::GenericMap& map_datum)
     kK(values)[index++] = identity();
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeMap(i.second.value<avro::GenericMap>());
+      kK(values)[index++] = decodeMap(field, i.second.value<avro::GenericMap>());
     }
     break;
   }
@@ -287,13 +287,13 @@ K decodeMap(const avro::GenericMap& map_datum)
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
-    throw TypeCheck("Unsupported type");
+    TYPE_CHECK_UNSUPPORTED_LEAF(field, avro::toString(avro::AVRO_MAP), avro::toString(map_type));
   }
 
   return xD(keys, values);
 }
 
-K decodeDatum(const avro::GenericDatum& datum, bool decompose_union)
+K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
   if (!decompose_union)
@@ -338,22 +338,22 @@ K decodeDatum(const avro::GenericDatum& datum, bool decompose_union)
     return result;
   }
   case avro::AVRO_RECORD:
-    return decodeRecord(datum.value<avro::GenericRecord>());
+    return decodeRecord(field, datum.value<avro::GenericRecord>());
   case avro::AVRO_ARRAY:
-    return decodeArray(datum.value<avro::GenericArray>());
+    return decodeArray(field, datum.value<avro::GenericArray>());
   case avro::AVRO_UNION:
-    return decodeUnion(datum);
+    return decodeUnion(field, datum);
   case avro::AVRO_MAP:
-    return decodeMap(datum.value<avro::GenericMap>());
+    return decodeMap(field, datum.value<avro::GenericMap>());
 
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
-    throw TypeCheck("Unsupported type");
+    TYPE_CHECK_UNSUPPORTED(field, avro::toString(avro_type));
   }
 }
 
-K decodeRecord(const avro::GenericRecord& record)
+K decodeRecord(const std::string& field, const avro::GenericRecord& record)
 {
   K keys = ktn(KS, record.fieldCount() + 1);
   kS(keys)[0] = ss((S)"");
@@ -365,18 +365,18 @@ K decodeRecord(const avro::GenericRecord& record)
     const auto& next = record.fieldAt(i);
     const auto& name = record.schema()->nameAt(i);
     kS(keys)[index] = ss((S)name.c_str());
-    kK(values)[index] = decodeDatum(next, false);
+    kK(values)[index] = decodeDatum(name, next, false);
     ++index;
   }
 
   return xD(keys, values);
 }
 
-K decodeUnion(const avro::GenericDatum& avro_union)
+K decodeUnion(const std::string& field, const avro::GenericDatum& avro_union)
 {
   K result = ktn(0, 2);
   kK(result)[0] = kh((I)avro_union.unionBranch());
-  kK(result)[1] = decodeDatum(avro_union, true);
+  kK(result)[1] = decodeDatum(field, avro_union, true);
 
   return result;
 }
@@ -404,7 +404,7 @@ K decode(K schema, K data)
   reader.read(datum);
   reader.drain();
 
-  return decodeDatum(datum, false);
+  return decodeDatum("", datum, false);
 
   KDB_EXCEPTION_CATCH;
 }

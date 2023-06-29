@@ -16,10 +16,12 @@ typedef signed char KdbType;
   if (expected != received) throw TypeCheckMap(field, datatype, expected, received);
 #define TYPE_CHECK_FIXED(field, expected, received) \
   if (expected != received) throw TypeCheckFixed(field, expected, received);
-#define TYPE_CHECK_NAME(field, datatype, expected, received) \
-  if (expected != received) throw TypeCheckName(field, datatype, expected, received);
+#define TYPE_CHECK_KDB(field, datatype, what, expected, received) \
+  if (expected != received) throw TypeCheckKdb(field, datatype, what, expected, received);
 #define TYPE_CHECK_UNSUPPORTED(field, datatype) \
   throw TypeCheckUnsupported(field, datatype);
+#define TYPE_CHECK_UNSUPPORTED_LEAF(field, datatype, leaf_datatype) \
+  throw TypeCheckUnsupported(field, datatype, leaf_datatype);
 
 
   // Hierachy of TypeCheck exceptions with each derived type being using for a
@@ -66,10 +68,20 @@ class TypeCheckUnsupported : public TypeCheck
 {
 public:
   TypeCheckUnsupported(const std::string& field, const std::string& datatype) :
-    TypeCheck("Unsupported datatype, field: '" + field + "' datatype: '" + datatype + "'")
+    TypeCheck("Unsupported datatype, field: '" + field + "', datatype: '" + datatype + "'")
+  {};
+  TypeCheckUnsupported(const std::string& field, const std::string& datatype, const std::string& leaf_datatype) :
+    TypeCheck("Unsupported datatype, field: '" + field + "', datatype: '" + datatype + "', leaf datatype: '" + leaf_datatype + "'")
   {};
 };
 
+class TypeCheckKdb : public TypeCheck
+{
+public:
+  TypeCheckKdb(const std::string& field, const std::string& datatype, const std::string& what, int expected, int received) :
+    TypeCheck("Invalid kdb+ mapping, field: '" + field + "', datatype: '" + datatype + "', " + what + " expected: " + std::to_string(expected) + ", received : " + std::to_string(received))
+  {};
+};
 
 inline KdbType GetKdbArrayType(avro::Type type)
 {
