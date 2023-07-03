@@ -13,9 +13,140 @@
 #include "TypeCheck.h"
 
 
+K decodeArray(const std::string& field, const avro::GenericArray& array_datum);
 K decodeMap(const std::string& field, const avro::GenericMap& avro_map);
 K decodeRecord(const std::string& field, const avro::GenericRecord& record);
 K decodeUnion(const std::string& field, const avro::GenericDatum& avro_union);
+
+
+K DecimalFromBytes(const std::string& field, avro::LogicalType logical_type, const std::vector<uint8_t>& bytes)
+{
+  // DECIMAL is a mixed list of (precision; scale; bin_data)
+  K result = ktn(0, 3);
+  kK(result)[0] = ki(logical_type.precision());
+  kK(result)[1] = ki(logical_type.scale());
+  K k_bytes = ktn(KG, bytes.size());
+  std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+  kK(result)[2] = k_bytes;
+  return result;
+}
+
+
+K DurationFromBytes(const std::string& field, const std::vector<uint8_t>& bytes)
+{
+  // DURATION is an int list of (month day milli)
+  K result = ktn(KI, 3);
+  uint32_t values[3];
+  std::memcpy(values, bytes.data(), sizeof(uint32_t) * 3);
+  kI(result)[0] = values[0];
+  kI(result)[1] = values[1];
+  kI(result)[2] = values[2];
+  return result;
+}
+
+K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
+{
+  avro::Type avro_type;
+  avro::LogicalType logical_type(avro::LogicalType::NONE);
+  if (!decompose_union) {
+    avro_type = GetRealType(datum);
+    logical_type = GetRealLogicalType(datum);
+  } else {
+    avro_type = datum.type();
+    logical_type = datum.logicalType();
+  }
+
+  switch (avro_type) {
+  case avro::AVRO_BOOL:
+    return kb(datum.value<bool>());
+  case avro::AVRO_BYTES:
+  {
+    const auto& bytes = datum.value<std::vector<uint8_t>>();
+
+    if (logical_type.type() == avro::LogicalType::DECIMAL)
+      return DecimalFromBytes(field, logical_type, bytes);
+    else {
+      const auto& bytes = datum.value<std::vector<uint8_t>>();
+      K k_bytes = ktn(KG, bytes.size());
+      std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+      return k_bytes;;
+    }
+  }
+  case avro::AVRO_DOUBLE:
+    return kf(datum.value<double>());
+  case avro::AVRO_ENUM:
+    return ks(S(datum.value<avro::GenericEnum>().symbol().c_str()));
+  case avro::AVRO_FIXED:
+  {
+    const auto& fixed = datum.value<avro::GenericFixed>().value();
+
+    if (logical_type.type() == avro::LogicalType::DECIMAL)
+      return DecimalFromBytes(field, logical_type, fixed);
+    else if (logical_type.type() == avro::LogicalType::DURATION)
+      return DurationFromBytes(field, fixed);
+    else {
+      K result = ktn(KG, fixed.size());
+      std::memcpy(kG(result), fixed.data(), fixed.size());
+      return result;
+    }
+  }
+  case avro::AVRO_FLOAT:
+    return ke(datum.value<float>());
+  case avro::AVRO_INT:
+  {
+    if (logical_type.type() == avro::LogicalType::DATE) {
+      TemporalConversion tc(field, logical_type.type());
+      return kd(tc.AvroToKdb(datum.value<int32_t>()));
+    } else if (logical_type.type() == avro::LogicalType::TIME_MILLIS) {
+      TemporalConversion tc(field, logical_type.type());
+      return kt(tc.AvroToKdb(datum.value<int32_t>()));
+    } else {
+      return ki(datum.value<int32_t>());
+    }
+  }
+  case avro::AVRO_LONG:
+  {
+    if (logical_type.type() == avro::LogicalType::TIME_MICROS) {
+      TemporalConversion tc(field, logical_type.type());
+      return ktj(-KN, tc.AvroToKdb(datum.value<int64_t>()));
+    } else if (logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
+      TemporalConversion tc(field, logical_type.type());
+      return ktj(-KP, tc.AvroToKdb(datum.value<int64_t>()));
+    } else {
+      return kj(datum.value<int64_t>());
+    }
+  }
+  case avro::AVRO_NULL:
+    return identity();;
+  case avro::AVRO_STRING:
+  {
+    const auto& string = datum.value<std::string>();
+    if (logical_type.type() == avro::LogicalType::UUID) {
+      TYPE_CHECK_KDB(field, avro::toString(avro_type), "avro uuid length", sizeof(U), string.length());
+      U k_guid;
+      std::memcpy(k_guid.g, string.data(), string.length());
+      return ku(k_guid);
+    } else {
+      K result = ktn(KC, string.length());
+      std::memcpy(kG(result), string.c_str(), string.length());
+      return result;
+    }
+  }
+  case avro::AVRO_RECORD:
+    return decodeRecord(field, datum.value<avro::GenericRecord>());
+  case avro::AVRO_ARRAY:
+    return decodeArray(field, datum.value<avro::GenericArray>());
+  case avro::AVRO_UNION:
+    return decodeUnion(field, datum);
+  case avro::AVRO_MAP:
+    return decodeMap(field, datum.value<avro::GenericMap>());
+
+  case avro::AVRO_SYMBOLIC:
+  case avro::AVRO_UNKNOWN:
+  default:
+    TYPE_CHECK_UNSUPPORTED(field, avro::toString(avro_type));
+  }
+}
 
 K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
 {
@@ -42,11 +173,18 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_BYTES:
   {
-    for (auto i : array_data) {
-      const auto& bytes = i.value<std::vector<uint8_t>>();
-      K k_bytes = ktn(KG, bytes.size());
-      std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
-      kK(result)[index++] = k_bytes;
+    if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i : array_data) {
+        const auto& bytes = i.value<std::vector<uint8_t>>();
+        kK(result)[index++] = DecimalFromBytes(field, array_logical_type, bytes);
+      }
+    } else {
+      for (auto i : array_data) {
+        const auto& bytes = i.value<std::vector<uint8_t>>();
+        K k_bytes = ktn(KG, bytes.size());
+        std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+        kK(result)[index++] = k_bytes;
+      }
     }
     break;
   }
@@ -64,11 +202,23 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_FIXED:
   {
-    for (auto i : array_data) {
-      const auto& fixed = i.value<avro::GenericFixed>().value();
-      K k_fixed = ktn(KG, fixed.size());
-      std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
-      kK(result)[index++] = k_fixed;
+    if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i : array_data) {
+        const auto& fixed = i.value<avro::GenericFixed>().value();
+        kK(result)[index++] = DecimalFromBytes(field, array_logical_type, fixed);
+      }
+    } else if (array_logical_type.type() == avro::LogicalType::DURATION) {
+      for (auto i : array_data) {
+        const auto& fixed = i.value<avro::GenericFixed>().value();
+        kK(result)[index++] = DurationFromBytes(field, fixed);
+      }
+    } else {
+      for (auto i : array_data) {
+        const auto& fixed = i.value<avro::GenericFixed>().value();
+        K k_fixed = ktn(KG, fixed.size());
+        std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
+        kK(result)[index++] = k_fixed;
+      }
     }
     break;
   }
@@ -80,14 +230,26 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_INT:
   {
-    for (auto i : array_data)
-      kI(result)[index++] = i.value<int32_t>();
+    if (array_logical_type.type() == avro::LogicalType::DATE || array_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
+      TemporalConversion tc(field, array_logical_type.type());
+      for (auto i : array_data)
+        kI(result)[index++] = tc.AvroToKdb(i.value<int32_t>());
+    } else {
+      for (auto i : array_data)
+        kI(result)[index++] = i.value<int32_t>();
+    }
     break;
   }
   case avro::AVRO_LONG:
   {
-    for (auto i : array_data)
-      kJ(result)[index++] = i.value<int64_t>();
+    if (array_logical_type.type() == avro::LogicalType::TIME_MICROS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
+      TemporalConversion tc(field, array_logical_type.type());
+      for (auto i : array_data)
+        kJ(result)[index++] = tc.AvroToKdb(i.value<int64_t>());
+    } else {
+      for (auto i : array_data)
+        kJ(result)[index++] = i.value<int64_t>();
+    }
     break;
   }
   case avro::AVRO_NULL:
@@ -98,11 +260,21 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_STRING:
   {
-    for (auto i : array_data) {
-      const auto& string = i.value<std::string>();
-      K k_string = ktn(KC, string.length());
-      std::memcpy(kG(k_string), string.c_str(), string.length());
-      kK(result)[index++] = k_string;
+    if (array_logical_type.type() == avro::LogicalType::UUID) {
+      for (auto i : array_data) {
+        const auto& string = i.value<std::string>();
+        TYPE_CHECK_KDB(field, avro::toString(array_type), "avro uuid length", sizeof(U), string.length());
+        U k_guid;
+        std::memcpy(k_guid.g, string.data(), string.length());
+        kU(result)[index++] = k_guid;
+      }
+    } else {
+      for (auto i : array_data) {
+        const auto& string = i.value<std::string>();
+        K k_string = ktn(KC, string.length());
+        std::memcpy(kG(k_string), string.c_str(), string.length());
+        kK(result)[index++] = k_string;
+      }
     }
     break;
   }
@@ -294,160 +466,6 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
 
   return xD(keys, values);
-}
-
-K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
-{
-  avro::Type avro_type;
-  avro::LogicalType logical_type(avro::LogicalType::NONE);
-  if (!decompose_union) {
-    avro_type = GetRealType(datum);
-    logical_type = GetRealLogicalType(datum);
-  } else {
-    avro_type = datum.type();
-    logical_type = datum.logicalType();
-  }
-
-  switch (avro_type) {
-  case avro::AVRO_BOOL:
-    return kb(datum.value<bool>());
-  case avro::AVRO_BYTES:
-  {
-    const auto& bytes = datum.value<std::vector<uint8_t>>();
-    K k_bytes = ktn(KG, bytes.size());
-    std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
-
-    switch (logical_type.type()) {
-    case avro::LogicalType::DECIMAL:
-    {
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
-      K result = ktn(0, 3);
-      kK(result)[0] = ki(logical_type.precision());
-      kK(result)[1] = ki(logical_type.scale());
-      kK(result)[2] = k_bytes;
-      return result;
-    }
-    default:
-    {
-      const auto& bytes = datum.value<std::vector<uint8_t>>();
-      K result = ktn(KG, bytes.size());
-      std::memcpy(kG(result), bytes.data(), bytes.size());
-      return k_bytes;;
-    }
-    }
-  }
-  case avro::AVRO_DOUBLE:
-    return kf(datum.value<double>());
-  case avro::AVRO_ENUM:
-    return ks(S(datum.value<avro::GenericEnum>().symbol().c_str()));
-  case avro::AVRO_FIXED:
-  {
-    const auto& fixed = datum.value<avro::GenericFixed>().value();
-
-    switch (logical_type.type()) {
-    case avro::LogicalType::DECIMAL:
-    {
-      K k_bytes = ktn(KG, fixed.size());
-      std::memcpy(kG(k_bytes), fixed.data(), fixed.size());
-
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
-      K result = ktn(0, 3);
-      kK(result)[0] = ki(logical_type.precision());
-      kK(result)[1] = ki(logical_type.scale());
-      kK(result)[2] = k_bytes;
-      return result;
-    }
-    case avro::LogicalType::DURATION:
-    {
-      // DURATION is an int list of (month day milli)
-      K result = ktn(KI, 3);
-      uint32_t values[3];
-      std::memcpy(values, fixed.data(), sizeof(uint32_t) * 3);
-      kI(result)[0] = values[0];
-      kI(result)[1] = values[1];
-      kI(result)[2] = values[2];
-      return result;
-    }
-    default:
-    {
-      K result = ktn(KG, fixed.size());
-      std::memcpy(kG(result), fixed.data(), fixed.size());
-      return result;
-    }
-    }
-  }
-  case avro::AVRO_FLOAT:
-    return ke(datum.value<float>());
-  case avro::AVRO_INT:
-  {
-    switch (logical_type.type()) {
-    case avro::LogicalType::DATE:
-    {
-      TemporalConversion tc(field, logical_type.type());
-      return kd(tc.AvroToKdb(datum.value<int32_t>()));
-    }
-    case avro::LogicalType::TIME_MILLIS:
-    {
-      TemporalConversion tc(field, logical_type.type());
-      return kt(tc.AvroToKdb(datum.value<int32_t>()));
-    }
-    default:
-      return ki(datum.value<int32_t>());
-    }
-  }
-  case avro::AVRO_LONG:
-  {
-    switch (logical_type.type()) {
-    case avro::LogicalType::TIME_MICROS:
-    {
-      TemporalConversion tc(field, logical_type.type());
-      return ktj(-KN, tc.AvroToKdb(datum.value<int64_t>()));
-    }
-    case avro::LogicalType::TIMESTAMP_MILLIS:
-    case avro::LogicalType::TIMESTAMP_MICROS:
-    {
-      TemporalConversion tc(field, logical_type.type());
-      return ktj(-KP, tc.AvroToKdb(datum.value<int64_t>()));
-    }
-    default:
-      return kj(datum.value<int64_t>());
-    }
-  }
-  case avro::AVRO_NULL:
-    return identity();;
-  case avro::AVRO_STRING:
-  {
-    const auto& string = datum.value<std::string>();
-    switch (logical_type.type()) {
-    case avro::LogicalType::UUID:
-    {
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "avro uuid length", sizeof(U), string.length());
-      U k_guid;
-      std::memcpy(k_guid.g, string.data(), string.length());
-      return ku(k_guid);
-    }
-    default:
-    {
-      K result = ktn(KC, string.length());
-      std::memcpy(kG(result), string.c_str(), string.length());
-      return result;
-    }
-    }
-  }
-  case avro::AVRO_RECORD:
-    return decodeRecord(field, datum.value<avro::GenericRecord>());
-  case avro::AVRO_ARRAY:
-    return decodeArray(field, datum.value<avro::GenericArray>());
-  case avro::AVRO_UNION:
-    return decodeUnion(field, datum);
-  case avro::AVRO_MAP:
-    return decodeMap(field, datum.value<avro::GenericMap>());
-
-  case avro::AVRO_SYMBOLIC:
-  case avro::AVRO_UNKNOWN:
-  default:
-    TYPE_CHECK_UNSUPPORTED(field, avro::toString(avro_type));
-  }
 }
 
 K decodeRecord(const std::string& field, const avro::GenericRecord& record)

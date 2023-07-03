@@ -18,6 +18,34 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data);
 void encodeRecord(const std::string& field, avro::GenericRecord& record, K data);
 void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data);
 
+std::vector<uint8_t> DecimalToBytes(const std::string& field, avro::Type avro_type, const avro::LogicalType& logical_type, K data)
+{
+  // DECIMAL is a mixed list of (precision; scale; bin_data)
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal list length", 3, data->n);
+  K precision = kK(data)[0];
+  K scale = kK(data)[1];
+  K k_bytes = kK(data)[2];
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal precision type", -KI, precision->t);
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal precision", logical_type.precision(), precision->i)
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal scale type", -KI, scale->t);
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal scale", logical_type.scale(), scale->i)
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal data type", KG, k_bytes->t);
+
+  std::vector<uint8_t> bytes(k_bytes->n);
+  std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
+  return bytes;
+}
+
+std::vector<uint8_t> DurationToBytes(const std::string& field, avro::Type avro_type, K data)
+{
+  // DURATION is an int list of (month day milli)
+  TYPE_CHECK_KDB(field, avro::toString(avro_type), "duration list length", 3, data->n);
+  std::vector<uint8_t> fixed(sizeof(uint32_t) * 3);
+  uint32_t values[3] = { (uint32_t)kI(data)[0], (uint32_t)kI(data)[1], (uint32_t)kI(data)[2] };
+  std::memcpy(fixed.data(), values, sizeof(uint32_t) * 3);
+  return fixed;
+}
+
 void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K data, bool decompose_union)
 {
   avro::Type avro_type;
@@ -38,31 +66,12 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
     break;
   case avro::AVRO_BYTES:
   {
-    switch (logical_type.type()) {
-    case avro::LogicalType::DECIMAL:
-    {
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal list length", 3, data->n);
-      K precision = kK(data)[0];
-      K scale = kK(data)[1];
-      K k_bytes = kK(data)[2];
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal precision type", -KI, precision->t);
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal scale type", -KI, scale->t);
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal data type", KG, k_bytes->t);
-      avro_datum.logicalType().setPrecision(precision->i);
-      avro_datum.logicalType().setScale(scale->i);
-      std::vector<uint8_t> bytes(data->n);
-      std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
-      avro_datum.value<std::vector<uint8_t>>() = bytes;
-      break;
-    }
-    default:
-    {
+    if (logical_type.type() == avro::LogicalType::DECIMAL)
+      avro_datum.value<std::vector<uint8_t>>() = DecimalToBytes(field, avro_type, logical_type, data);
+    else {
       std::vector<uint8_t> bytes(data->n);
       std::memcpy(bytes.data(), kG(data), data->n);
       avro_datum.value<std::vector<uint8_t>>() = bytes;
-      break;
-    }
     }
     break;
   }
@@ -77,44 +86,17 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
     auto& avro_fixed = avro_datum.value<avro::GenericFixed>();
     const auto fixed_size = avro_fixed.schema()->fixedSize();
 
-    switch (logical_type.type()) {
-    case avro::LogicalType::DECIMAL:
-    {
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal list length", 3, data->n);
-      K precision = kK(data)[0];
-      K scale = kK(data)[1];
-      K k_bytes = kK(data)[2];
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal precision type", -KI, precision->t);
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal scale type", -KI, scale->t);
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "decimal data type", KG, k_bytes->t);
-      avro_datum.logicalType().setPrecision(precision->i);
-      avro_datum.logicalType().setScale(scale->i);
-      std::vector<uint8_t> fixed(k_bytes->n);
-      std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
-      avro_fixed.value() = fixed;
-      break;
-    }
-    case avro::LogicalType::DURATION:
-    {
-      // DURATION is an int list of (month day milli)
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "duration list length", 3, data->n);
-      std::vector<uint8_t> fixed(sizeof(uint32_t) * 3);
-      uint32_t values[3] = { (uint32_t)kI(data)[0], (uint32_t)kI(data)[1], (uint32_t)kI(data)[2] };
-      std::memcpy(fixed.data(), values, sizeof(uint32_t) * 3);
-      avro_fixed.value() = fixed;
-      break;
-    }
-    default:
-    {
+    if (logical_type.type() == avro::LogicalType::DECIMAL)
+      avro_fixed.value() = DecimalToBytes(field, avro_type, logical_type, data);
+    else if (logical_type.type() == avro::LogicalType::DURATION)
+      avro_fixed.value() = DurationToBytes(field, avro_type, data);
+    else {
       TYPE_CHECK_FIXED(field, fixed_size, data->n);
 
       std::vector<uint8_t> fixed;
       fixed.resize(data->n);
       std::memcpy(fixed.data(), kG(data), data->n);
       avro_fixed.value() = fixed;
-      break;
-    }
     }
     break;
   }
@@ -123,34 +105,21 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
     break;
   case avro::AVRO_INT:
   {
-    switch (logical_type.type()) {
-    case avro::LogicalType::DATE:
-    case avro::LogicalType::TIME_MILLIS:
-    {
+    if (logical_type.type() == avro::LogicalType::DATE || logical_type.type() == avro::LogicalType::TIME_MILLIS) {
       TemporalConversion tc(field, logical_type.type());
       avro_datum.value<int32_t>() = tc.KdbToAvro(data->i);
-      break;
-    }
-    default:
+    } else {
       avro_datum.value<int32_t>() = data->i;
-      break;
     }
     break;
   }
   case avro::AVRO_LONG:
   {
-    switch (logical_type.type()) {
-    case avro::LogicalType::TIME_MICROS:
-    case avro::LogicalType::TIMESTAMP_MILLIS:
-    case avro::LogicalType::TIMESTAMP_MICROS:
-    {
+    if (logical_type.type() == avro::LogicalType::TIME_MICROS || logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
       TemporalConversion tc(field, logical_type.type());
       avro_datum.value<int64_t>() = tc.KdbToAvro(data->j);
-      break;
-    }
-    default:
+    } else {
       avro_datum.value<int64_t>() = data->j;
-      break;
     }
     break;
   }
@@ -158,14 +127,10 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
     break;
   case avro::AVRO_STRING:
   {
-    switch (logical_type.type()) {
-    case avro::LogicalType::UUID:
+    if (logical_type.type() == avro::LogicalType::UUID)
       avro_datum.value<std::string>() = std::string((char*)kG(data), sizeof(U));
-      break;
-    default:
+    else
       avro_datum.value<std::string>() = std::string((char*)kG(data), data->n);
-      break;
-    }
     break;
   }
   case avro::AVRO_RECORD:
@@ -216,12 +181,20 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   }
   case avro::AVRO_BYTES:
   {
-    for (auto i = 0; i < data->n; ++i) {
-      K k_bytes = kK(data)[i];
-      TYPE_CHECK_ARRAY(field, avro::toString(array_type), KG, k_bytes->t);
-      std::vector<uint8_t> bytes(k_bytes->n);
-      std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
-      array_data.push_back(avro::GenericDatum(bytes));
+    if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_bytes = kK(data)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(array_type), 0, k_bytes->t);
+        array_data.push_back(avro::GenericDatum(DecimalToBytes(field, array_type, array_logical_type, k_bytes)));
+      }
+    } else {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_bytes = kK(data)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(array_type), KG, k_bytes->t);
+        std::vector<uint8_t> bytes(k_bytes->n);
+        std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
+        array_data.push_back(avro::GenericDatum(bytes));
+      }
     }
     break;
   }
@@ -239,15 +212,29 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   }
   case avro::AVRO_FIXED:
   {
-    for (auto i = 0; i < data->n; ++i) {
-      K k_bytes = kK(data)[i];
-      const auto fixed_size = array_schema->fixedSize();
-      TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
+    if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_bytes = kK(data)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(array_type), 0, k_bytes->t);
+        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DecimalToBytes(field, array_type, array_logical_type, k_bytes))));
+      }
+    } else if (array_logical_type.type() == avro::LogicalType::DURATION) {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_bytes = kK(data)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(array_type), KI, k_bytes->t);
+        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DurationToBytes(field, array_type, k_bytes))));
+      }
+    } else {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_bytes = kK(data)[i];
+        const auto fixed_size = array_schema->fixedSize();
+        TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
 
-      std::vector<uint8_t> fixed;
-      fixed.resize(k_bytes->n);
-      std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
-      array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, fixed)));
+        std::vector<uint8_t> fixed;
+        fixed.resize(k_bytes->n);
+        std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
+        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, fixed)));
+      }
     }
     break;
   }
@@ -259,14 +246,26 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   }
   case avro::AVRO_INT:
   {
-    for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum(kI(data)[i]));
+    if (array_logical_type.type() == avro::LogicalType::DATE || array_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
+      TemporalConversion tc(field, array_logical_type.type());
+      for (auto i = 0; i < data->n; ++i)
+        array_data.push_back(avro::GenericDatum(tc.KdbToAvro(kI(data)[i])));
+    } else {
+      for (auto i = 0; i < data->n; ++i)
+        array_data.push_back(avro::GenericDatum(kI(data)[i]));
+    }
     break;
   }
   case avro::AVRO_LONG:
   {
-    for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum(kJ(data)[i]));
+    if (array_logical_type.type() == avro::LogicalType::TIME_MICROS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
+       TemporalConversion tc(field, array_logical_type.type());
+      for (auto i = 0; i < data->n; ++i)
+        array_data.push_back(avro::GenericDatum(tc.KdbToAvro(kJ(data)[i])));
+    } else {
+      for (auto i = 0; i < data->n; ++i)
+        array_data.push_back(avro::GenericDatum(kJ(data)[i]));
+    }
     break;
   }
   case avro::AVRO_NULL:
@@ -280,10 +279,17 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   }
   case avro::AVRO_STRING:
   {
-    for (auto i = 0; i < data->n; ++i) {
-      K k_string = kK(data)[i];
-      TYPE_CHECK_ARRAY(field, avro::toString(array_type), KC, k_string->t);
-      array_data.push_back(avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)));
+    if (array_logical_type.type() == avro::LogicalType::UUID) {
+      for (auto i = 0; i < data->n; ++i) {
+        U k_uuid = kU(data)[i];
+        array_data.push_back(avro::GenericDatum(std::string((char*)k_uuid.g, sizeof(U))));
+      }
+    } else {
+      for (auto i = 0; i < data->n; ++i) {
+        K k_string = kK(data)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(array_type), KC, k_string->t);
+        array_data.push_back(avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)));
+      }
     }
     break;
   }

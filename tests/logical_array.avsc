@@ -1,0 +1,42 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": { "type": "array", "items": { "type": "bytes", "logicalType": "decimal", "precision": 4, "scale": 2 } }
+        },
+        {
+            "name": "b",
+            "type": { "type": "array", "items": { "type": "string", "logicalType": "uuid" } }
+        },
+        {
+            "name": "c",
+            "type": { "type": "array", "items": { "type": "int", "logicalType": "date" } }
+        },
+        {
+            "name": "d",
+            "type": { "type": "array", "items": { "type": "int", "logicalType": "time-millis" } }
+        },
+        {
+            "name": "e",
+            "type": { "type": "array", "items": { "type": "long", "logicalType": "time-micros" } }
+        },
+        {
+            "name": "f",
+            "type": { "type": "array", "items": { "type": "long", "logicalType": "timestamp-millis" } }
+        },
+        {
+            "name": "g",
+            "type": { "type": "array", "items": { "type": "long", "logicalType": "timestamp-micros" } }
+        },
+        {
+            "name": "h",
+            "type": { "type": "array", "items": { "type": "fixed", "name": "myfixed", "size": 12, "logicalType": "duration" } }
+        },
+        {
+            "name": "i",
+            "type": { "type": "array", "items": { "type": "fixed", "name": "decfixed", "size": 4, "logicalType": "decimal", "precision": 4, "scale": 2 } }
+        }
+    ]
+}

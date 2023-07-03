@@ -92,7 +92,7 @@ inline KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_
   {
     switch (logical_type) {
     case avro::LogicalType::DECIMAL:
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
+      // DECIMAL is a mixed list of mixed lists of (precision; scale; bin_data)
     default:
       return 0;
     }
@@ -105,9 +105,9 @@ inline KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_
   {
     switch (logical_type) {
     case avro::LogicalType::DECIMAL:
-      // DECIMAL is a mixed list of (precision; scale; bin_data)
+      // DECIMAL is a mixed list of mixed lists (precision; scale; bin_data)
     case avro::LogicalType::DURATION:
-      // DURATION is an int list of (month day milli)
+      // DURATION is mixed list of int lists of (month day milli)
     default:
       return 0;
     }
@@ -172,7 +172,7 @@ inline KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical
   {
     switch (logical_type) {
     case avro::LogicalType::DECIMAL:
-      // DECIMAL is a mixed list of mixed lists of (precision; scale; bin_data)
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
       return 0;
     default:
       return KG;
@@ -186,10 +186,10 @@ inline KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical
   {
     switch (logical_type) {
     case avro::LogicalType::DECIMAL:
-      // DECIMAL is a mixed list of mixed list of (precision; scale; bin_data)
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
       return 0;
     case avro::LogicalType::DURATION:
-      // DURATION is mixed list of an int list of (month day milli)
+      // DURATION is an int list of (month day milli)
       return KI;
     default:
       return KG;
@@ -268,7 +268,7 @@ inline KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
     auto array_value = avro_array.value();
     auto array_schema = avro_array.schema();
     assert(array_schema->leaves() == 1);
-    return GetKdbArrayType(array_schema->leafAt(0)->type(), logical_type);
+    return GetKdbArrayType(array_schema->leafAt(0)->type(), array_schema->leafAt(0)->logicalType().type());
   }
   default:
     return GetKdbSimpleType(avro_type, logical_type);

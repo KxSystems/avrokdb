@@ -150,3 +150,12 @@ output:.avro.decode[sc;serialised];
 show output;
 -1 "<----- Result ----->";
 show input~output;
+
+-1 "<----- Record of array of logical types ----->";
+sc:.avro.readJsonSchema["tests/logical_array.avsc"];
+input:(``a`b`c`d`e`f`g`h`i)!(::;enlist (4i;2i;0x001122);2?0Ng;enlist .z.d;enlist .z.t;enlist `timespan$123000;enlist `timestamp$123000000;enlist `timestamp$123000;enlist (1 2 3i);enlist (4i;2i;0x00112233));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;
