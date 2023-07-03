@@ -142,3 +142,11 @@ show output;
 -1 "<----- Result ----->";
 show input~output;
 
+-1 "<----- Record of logical types ----->";
+sc:.avro.readJsonSchema["tests/logical_single.avsc"];
+input:(``a`b`c`d`e`f`g`h`i)!(::;(4i;2i;0x001122);first 1?0Ng;.z.d;.z.t;`timespan$123000;`timestamp$123000000;`timestamp$123000;(1 2 3i);(4i;2i;0x00112233));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;

@@ -78,30 +78,65 @@ public:
 class TypeCheckKdb : public TypeCheck
 {
 public:
-  TypeCheckKdb(const std::string& field, const std::string& datatype, const std::string& what, int expected, int received) :
+  TypeCheckKdb(const std::string& field, const std::string& datatype, const std::string& what, int64_t expected, int64_t received) :
     TypeCheck("Invalid kdb+ mapping, field: '" + field + "', datatype: '" + datatype + "', " + what + " expected: " + std::to_string(expected) + ", received : " + std::to_string(received))
   {};
 };
 
-inline KdbType GetKdbArrayType(avro::Type type)
+inline KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_type)
 {
   switch (type) {
   case avro::AVRO_BOOL:
     return KB;
   case avro::AVRO_BYTES:
-    return 0;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DECIMAL:
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
+    default:
+      return 0;
+    }
+  }
   case avro::AVRO_DOUBLE:
     return KF;
   case avro::AVRO_ENUM:
     return KS;
   case avro::AVRO_FIXED:
-    return 0;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DECIMAL:
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
+    case avro::LogicalType::DURATION:
+      // DURATION is an int list of (month day milli)
+    default:
+      return 0;
+    }
+  }
   case avro::AVRO_FLOAT:
     return KE;
   case avro::AVRO_INT:
-    return KI;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DATE:
+      return KD;
+    case avro::LogicalType::TIME_MILLIS:
+      return KT;
+    default:
+      return KI;
+    }
+  }
   case avro::AVRO_LONG:
-    return KJ;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::TIME_MICROS:
+      return KN;
+    case avro::LogicalType::TIMESTAMP_MILLIS:
+    case avro::LogicalType::TIMESTAMP_MICROS:
+      return KP;
+    default:
+      return KJ;
+    }
+  }
   case avro::AVRO_MAP:
     return 0;
   case avro::AVRO_NULL:
@@ -109,7 +144,14 @@ inline KdbType GetKdbArrayType(avro::Type type)
   case avro::AVRO_RECORD:
     return 0;
   case avro::AVRO_STRING:
-    return 0;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::UUID:
+      return UU;
+    default:
+      return 0;
+    }
+  }
   case avro::AVRO_UNION:
     return 0;
   case avro::AVRO_ARRAY:
@@ -121,25 +163,63 @@ inline KdbType GetKdbArrayType(avro::Type type)
   }
 }
 
-inline KdbType GetKdbSimpleType(avro::Type type)
+inline KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical_type)
 {
   switch (type) {
   case avro::AVRO_BOOL:
     return -KB;
   case avro::AVRO_BYTES:
-    return KG;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DECIMAL:
+      // DECIMAL is a mixed list of mixed lists of (precision; scale; bin_data)
+      return 0;
+    default:
+      return KG;
+    }
+  }
   case avro::AVRO_DOUBLE:
     return -KF;
   case avro::AVRO_ENUM:
     return -KS;
   case avro::AVRO_FIXED:
-    return KG;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DECIMAL:
+      // DECIMAL is a mixed list of mixed list of (precision; scale; bin_data)
+      return 0;
+    case avro::LogicalType::DURATION:
+      // DURATION is mixed list of an int list of (month day milli)
+      return KI;
+    default:
+      return KG;
+    }
+  }
   case avro::AVRO_FLOAT:
     return -KE;
   case avro::AVRO_INT:
-    return -KI;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::DATE:
+      return -KD;
+    case avro::LogicalType::TIME_MILLIS:
+      return -KT;
+    default:
+      return -KI;
+    }
+  }
   case avro::AVRO_LONG:
-    return -KJ;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::TIME_MICROS:
+      return -KN;
+    case avro::LogicalType::TIMESTAMP_MILLIS:
+    case avro::LogicalType::TIMESTAMP_MICROS:
+      return -KP;
+    default:
+      return -KJ;
+    }
+  }
   case avro::AVRO_MAP:
     return 99;
   case avro::AVRO_NULL:
@@ -147,7 +227,14 @@ inline KdbType GetKdbSimpleType(avro::Type type)
   case avro::AVRO_RECORD:
     return 99;
   case avro::AVRO_STRING:
-    return KC;
+  {
+    switch (logical_type) {
+    case avro::LogicalType::UUID:
+      return -UU;
+    default:
+      return KC;
+    }
+  }
   case avro::AVRO_UNION:
     return 0;
 
@@ -162,10 +249,14 @@ inline KdbType GetKdbSimpleType(avro::Type type)
 inline KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
-  if (!decompose_union)
+  avro::LogicalType::Type logical_type(avro::LogicalType::NONE);
+  if (!decompose_union) {
     avro_type = GetRealType(datum);
-  else
+    logical_type = GetRealLogicalType(datum).type();
+  } else {
     avro_type = datum.type();
+    logical_type = datum.logicalType().type();
+  }
 
   switch (avro_type) {
   case avro::AVRO_SYMBOLIC:
@@ -177,9 +268,9 @@ inline KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
     auto array_value = avro_array.value();
     auto array_schema = avro_array.schema();
     assert(array_schema->leaves() == 1);
-    return GetKdbArrayType(array_schema->leafAt(0)->type());
+    return GetKdbArrayType(array_schema->leafAt(0)->type(), logical_type);
   }
   default:
-    return GetKdbSimpleType(avro_type);
+    return GetKdbSimpleType(avro_type, logical_type);
   }
 }

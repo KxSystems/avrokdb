@@ -2,6 +2,7 @@
 
 #include <avro/ValidSchema.hh>
 #include <avro/GenericDatum.hh>
+#include <avro/LogicalType.hh>
 
 #include "InitialiseKdb.h"
 #include "Schema.h"

@@ -50,6 +50,48 @@ inline const std::string GetKdbString(K str)
   }
 
 
+//////////////////////////////
+// TEMPORAL TYPE CONVERSION //
+//////////////////////////////
+
+// Helper class which can convert any int32 or int64 arrow temporal type
+// (including those with a parameterised TimeUnit) to an appropriate kdb type.
+class TemporalConversion
+{
+private:
+  // Epoch / scaling constants
+  const static int32_t kdb_date_epoch_days = 10957;
+  const static int64_t kdb_timestamp_epoch_nano = 946684800000000000LL;
+  const static int64_t ns_us_scale = 1000LL;
+  const static int64_t ns_ms_scale = ns_us_scale * 1000LL;
+  const static int64_t ns_sec_scale = ns_ms_scale * 1000LL;
+  const static int64_t day_as_ns = 86400000000000LL;
+
+  int64_t offset = 0;
+  int64_t scalar = 1;
+
+public:
+  // The constructor sets up the correct epoch offsetting and scaling factor
+  // based the arrow datatype
+  TemporalConversion(const std::string& field, const avro::LogicalType::Type logical_type);
+
+  // Converts from an arrow temporal (either int32 or int64) to its kdb value,
+  // applying the epoch offseting and scaling factor
+  template <typename T>
+  inline T AvroToKdb(T value)
+  {
+    return value * (T)scalar - (T)offset;
+  }
+
+  // Converts from a kdb temporal (either int32 or int64) to its arrow value,
+  // applying the epoch offseting and scaling factor
+  template <typename T>
+  inline T KdbToAvro(T value)
+  {
+    return (value + (T)offset) / (T)scalar;
+  }
+};
+
 /////////////////
 // FLIP TABLES //
 /////////////////
@@ -113,4 +155,11 @@ inline avro::Type GetRealType(const avro::GenericDatum& datum)
   if (datum.isUnion())
     return avro::AVRO_UNION;
   return datum.type();
+}
+
+inline avro::LogicalType GetRealLogicalType(const avro::GenericDatum& datum)
+{
+  if (datum.isUnion())
+    return avro::LogicalType(avro::LogicalType::NONE);
+  return datum.logicalType();
 }

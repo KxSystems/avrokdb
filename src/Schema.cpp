@@ -2,26 +2,11 @@
 #include <memory>
 #include <string>
 #include <fstream>
+#include <set>
 
-#include <avro/Decoder.hh>
-#include <avro/Encoder.hh>
-#include <avro/Node.hh>
-#include <avro/Parser.hh>
 #include <avro/Schema.hh>
-#include <avro/SchemaResolution.hh>
-#include <avro/Serializer.hh>
-#include <avro/Stream.hh>
 #include <avro/ValidSchema.hh>
-#include "boost/make_shared.hpp"
-#include "boost/shared_ptr.hpp"
-#include <avro/buffer/BufferPrint.hh>
-#include <avro/buffer/BufferStream.hh>
-
-#include <avro/AvroSerialize.hh>
-#include <avro/CustomAttributes.hh>
-#include <avro/NodeConcepts.hh>
-#include <avro/NodeImpl.hh>
-#include <avro/Types.hh>
+#include <avro/LogicalType.hh>
 #include <avro/Compiler.hh>
 
 #include "HelperFunctions.h"

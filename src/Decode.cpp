@@ -5,6 +5,7 @@
 #include <avro/Generic.hh>
 #include <avro/Decoder.hh>
 #include <avro/Stream.hh>
+#include <avro/LogicalType.hh>
 
 #include "HelperFunctions.h"
 #include "Schema.h"
@@ -21,6 +22,7 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   auto array_schema = array_datum.schema();
   assert(array_schema->leaves() == 1);
   auto array_type = array_schema->leafAt(0)->type();
+  auto array_logical_type = array_schema->leafAt(0)->logicalType();
   const auto& array_data = array_datum.value();
 
   size_t result_len = array_data.size();
@@ -28,7 +30,7 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
     // We put a (::) at the start of an array of records/maps so need one more item
     ++result_len;
   }
-  K result = ktn(GetKdbArrayType(array_type), result_len);
+  K result = ktn(GetKdbArrayType(array_type, array_logical_type.type()), result_len);
   size_t index = 0;
 
   switch (array_type) {
@@ -145,6 +147,7 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   auto map_schema = map_datum.schema();
   assert(map_schema->leaves() == 2);
   auto map_type = map_schema->leafAt(1)->type();
+  auto map_logical_type = map_schema->leafAt(0)->logicalType();
   const auto& map_data = map_datum.value();
 
   size_t result_len = map_data.size();
@@ -154,7 +157,7 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
 
   K keys = ktn(KS, result_len);
-  K values = ktn(GetKdbArrayType(map_type), result_len);
+  K values = ktn(GetKdbArrayType(map_type, map_logical_type.type()), result_len);
   size_t index = 0;
 
   switch (map_type) {
@@ -296,10 +299,14 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
 K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
-  if (!decompose_union)
+  avro::LogicalType logical_type(avro::LogicalType::NONE);
+  if (!decompose_union) {
     avro_type = GetRealType(datum);
-  else
+    logical_type = GetRealLogicalType(datum);
+  } else {
     avro_type = datum.type();
+    logical_type = datum.logicalType();
+  }
 
   switch (avro_type) {
   case avro::AVRO_BOOL:
@@ -307,9 +314,27 @@ K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool de
   case avro::AVRO_BYTES:
   {
     const auto& bytes = datum.value<std::vector<uint8_t>>();
-    K result = ktn(KG, bytes.size());
-    std::memcpy(kG(result), bytes.data(), bytes.size());
-    return result;
+    K k_bytes = ktn(KG, bytes.size());
+    std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+
+    switch (logical_type.type()) {
+    case avro::LogicalType::DECIMAL:
+    {
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
+      K result = ktn(0, 3);
+      kK(result)[0] = ki(logical_type.precision());
+      kK(result)[1] = ki(logical_type.scale());
+      kK(result)[2] = k_bytes;
+      return result;
+    }
+    default:
+    {
+      const auto& bytes = datum.value<std::vector<uint8_t>>();
+      K result = ktn(KG, bytes.size());
+      std::memcpy(kG(result), bytes.data(), bytes.size());
+      return k_bytes;;
+    }
+    }
   }
   case avro::AVRO_DOUBLE:
     return kf(datum.value<double>());
@@ -317,25 +342,97 @@ K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool de
     return ks(S(datum.value<avro::GenericEnum>().symbol().c_str()));
   case avro::AVRO_FIXED:
   {
-    const auto & fixed = datum.value<avro::GenericFixed>().value();
-    K result = ktn(KG, fixed.size());
-    std::memcpy(kG(result), fixed.data(), fixed.size());
-    return result;
+    const auto& fixed = datum.value<avro::GenericFixed>().value();
+
+    switch (logical_type.type()) {
+    case avro::LogicalType::DECIMAL:
+    {
+      K k_bytes = ktn(KG, fixed.size());
+      std::memcpy(kG(k_bytes), fixed.data(), fixed.size());
+
+      // DECIMAL is a mixed list of (precision; scale; bin_data)
+      K result = ktn(0, 3);
+      kK(result)[0] = ki(logical_type.precision());
+      kK(result)[1] = ki(logical_type.scale());
+      kK(result)[2] = k_bytes;
+      return result;
+    }
+    case avro::LogicalType::DURATION:
+    {
+      // DURATION is an int list of (month day milli)
+      K result = ktn(KI, 3);
+      uint32_t values[3];
+      std::memcpy(values, fixed.data(), sizeof(uint32_t) * 3);
+      kI(result)[0] = values[0];
+      kI(result)[1] = values[1];
+      kI(result)[2] = values[2];
+      return result;
+    }
+    default:
+    {
+      K result = ktn(KG, fixed.size());
+      std::memcpy(kG(result), fixed.data(), fixed.size());
+      return result;
+    }
+    }
   }
   case avro::AVRO_FLOAT:
     return ke(datum.value<float>());
   case avro::AVRO_INT:
-    return ki(datum.value<int32_t>());
+  {
+    switch (logical_type.type()) {
+    case avro::LogicalType::DATE:
+    {
+      TemporalConversion tc(field, logical_type.type());
+      return kd(tc.AvroToKdb(datum.value<int32_t>()));
+    }
+    case avro::LogicalType::TIME_MILLIS:
+    {
+      TemporalConversion tc(field, logical_type.type());
+      return kt(tc.AvroToKdb(datum.value<int32_t>()));
+    }
+    default:
+      return ki(datum.value<int32_t>());
+    }
+  }
   case avro::AVRO_LONG:
-    return kj(datum.value<int64_t>());
+  {
+    switch (logical_type.type()) {
+    case avro::LogicalType::TIME_MICROS:
+    {
+      TemporalConversion tc(field, logical_type.type());
+      return ktj(-KN, tc.AvroToKdb(datum.value<int64_t>()));
+    }
+    case avro::LogicalType::TIMESTAMP_MILLIS:
+    case avro::LogicalType::TIMESTAMP_MICROS:
+    {
+      TemporalConversion tc(field, logical_type.type());
+      return ktj(-KP, tc.AvroToKdb(datum.value<int64_t>()));
+    }
+    default:
+      return kj(datum.value<int64_t>());
+    }
+  }
   case avro::AVRO_NULL:
     return identity();;
   case avro::AVRO_STRING:
   {
     const auto& string = datum.value<std::string>();
-    K result = ktn(KC, string.length());
-    std::memcpy(kG(result), string.c_str(), string.length());
-    return result;
+    switch (logical_type.type()) {
+    case avro::LogicalType::UUID:
+    {
+      TYPE_CHECK_KDB(field, avro::toString(avro_type), "avro uuid length", sizeof(U), string.length());
+      U k_guid;
+      std::memcpy(k_guid.g, string.data(), string.length());
+      return ku(k_guid);
+    }
+    default:
+    {
+      K result = ktn(KC, string.length());
+      std::memcpy(kG(result), string.c_str(), string.length());
+      return result;
+    }
+    }
   }
   case avro::AVRO_RECORD:
     return decodeRecord(field, datum.value<avro::GenericRecord>());
