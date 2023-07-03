@@ -159,3 +159,13 @@ output:.avro.decode[sc;serialised];
 show output;
 -1 "<----- Result ----->";
 show input~output;
+
+
+-1 "<----- Record of map of logical types ----->";
+sc:.avro.readJsonSchema["tests/logical_maps.avsc"];
+input:(``a`b`c`d`e`f`g`h`i)!(::;(enlist `j)!enlist (4i;2i;0x001122);(`k`l)!2?0Ng;(enlist `m)!enlist .z.d;(enlist `n)!enlist .z.t;(enlist `o)!enlist `timespan$123000;(enlist `p)!enlist `timestamp$123000000;(enlist `q)!enlist `timestamp$123000;(enlist `r)!enlist (1 2 3i);(enlist `s)!enlist (4i;2i;0x00112233));
+serialised:.avro.encode[sc;input];
+output:.avro.decode[sc;serialised];
+show output;
+-1 "<----- Result ----->";
+show input~output;

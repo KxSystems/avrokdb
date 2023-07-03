@@ -1,0 +1,42 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": { "type": "map", "values": { "type": "bytes", "logicalType": "decimal", "precision": 4, "scale": 2 } }
+        },
+        {
+            "name": "b",
+            "type": { "type": "map", "values": { "type": "string", "logicalType": "uuid" } }
+        },
+        {
+            "name": "c",
+            "type": { "type": "map", "values": { "type": "int", "logicalType": "date" } }
+        },
+        {
+            "name": "d",
+            "type": { "type": "map", "values": { "type": "int", "logicalType": "time-millis" } }
+        },
+        {
+            "name": "e",
+            "type": { "type": "map", "values": { "type": "long", "logicalType": "time-micros" } }
+        },
+        {
+            "name": "f",
+            "type": { "type": "map", "values": { "type": "long", "logicalType": "timestamp-millis" } }
+        },
+        {
+            "name": "g",
+            "type": { "type": "map", "values": { "type": "long", "logicalType": "timestamp-micros" } }
+        },
+        {
+            "name": "h",
+            "type": { "type": "map", "values": { "type": "fixed", "name": "myfixed", "size": 12, "logicalType": "duration" } }
+        },
+        {
+            "name": "i",
+            "type": { "type": "map", "values": { "type": "fixed", "name": "decfixed", "size": 4, "logicalType": "decimal", "precision": 4, "scale": 2 } }
+        }
+    ]
+}

@@ -319,7 +319,7 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   auto map_schema = map_datum.schema();
   assert(map_schema->leaves() == 2);
   auto map_type = map_schema->leafAt(1)->type();
-  auto map_logical_type = map_schema->leafAt(0)->logicalType();
+  auto map_logical_type = map_schema->leafAt(1)->logicalType();
   const auto& map_data = map_datum.value();
 
   size_t result_len = map_data.size();
@@ -343,12 +343,20 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_BYTES:
   {
-    for (auto i : map_data) {
-      kS(keys)[index] = ss((S)i.first.c_str());
-      const auto& bytes = i.second.value<std::vector<uint8_t>>();
-      K k_bytes = ktn(KG, bytes.size());
-      std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
-      kK(values)[index++] = k_bytes;
+    if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& bytes = i.second.value<std::vector<uint8_t>>();
+        kK(values)[index++] = DecimalFromBytes(field, map_logical_type, bytes);
+      }
+    } else {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& bytes = i.second.value<std::vector<uint8_t>>();
+        K k_bytes = ktn(KG, bytes.size());
+        std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
+        kK(values)[index++] = k_bytes;
+      }
     }
     break;
   }
@@ -370,12 +378,26 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_FIXED:
   {
-    for (auto i : map_data) {
-      kS(keys)[index] = ss((S)i.first.c_str());
-      const auto& fixed = i.second.value<avro::GenericFixed>().value();
-      K k_fixed = ktn(KG, fixed.size());
-      std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
-      kK(values)[index++] = k_fixed;
+    if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& fixed = i.second.value<avro::GenericFixed>().value();
+        kK(values)[index++] = DecimalFromBytes(field, map_logical_type, fixed);
+      }
+    } else if (map_logical_type.type() == avro::LogicalType::DURATION) {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& fixed = i.second.value<avro::GenericFixed>().value();
+        kK(values)[index++] = DurationFromBytes(field, fixed);
+      }
+    } else {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& fixed = i.second.value<avro::GenericFixed>().value();
+        K k_fixed = ktn(KG, fixed.size());
+        std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
+        kK(values)[index++] = k_fixed;
+      }
     }
     break;
   }
@@ -389,14 +411,36 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_INT:
   {
-    for (auto i : map_data) {
-      kS(keys)[index] = ss((S)i.first.c_str());
-      kI(values)[index++] = i.second.value<int32_t>();
+    if (map_logical_type.type() == avro::LogicalType::DATE || map_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
+      TemporalConversion tc(field, map_logical_type.type());
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        kI(values)[index++] = tc.AvroToKdb(i.second.value<int32_t>());
+      }
+    } else {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        kI(values)[index++] = i.second.value<int32_t>();
+      }
     }
     break;
   }
   case avro::AVRO_LONG:
   {
+    if (map_logical_type.type() == avro::LogicalType::TIME_MICROS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
+      TemporalConversion tc(field, map_logical_type.type());
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        kJ(values)[index++] = tc.AvroToKdb(i.second.value<int64_t>());
+      }
+    } else {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        kJ(values)[index++] = i.second.value<int64_t>();
+      }
+    }
+    break;
+
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kJ(values)[index++] = i.second.value<int64_t>();
@@ -413,12 +457,23 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_STRING:
   {
-    for (auto i : map_data) {
-      kS(keys)[index] = ss((S)i.first.c_str());
-      const auto& string = i.second.value<std::string>();
-      K k_string = ktn(KC, string.length());
-      std::memcpy(kG(k_string), string.c_str(), string.length());
-      kK(values)[index++] = k_string;
+    if (map_logical_type.type() == avro::LogicalType::UUID) {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& string = i.second.value<std::string>();
+        TYPE_CHECK_KDB(field, avro::toString(map_type), "avro uuid length", sizeof(U), string.length());
+        U k_guid;
+        std::memcpy(k_guid.g, string.data(), string.length());
+        kU(values)[index++] = k_guid;
+      }
+    } else {
+      for (auto i : map_data) {
+        kS(keys)[index] = ss((S)i.first.c_str());
+        const auto& string = i.second.value<std::string>();
+        K k_string = ktn(KC, string.length());
+        std::memcpy(kG(k_string), string.c_str(), string.length());
+        kK(values)[index++] = k_string;
+      }
     }
     break;
   }

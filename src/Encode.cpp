@@ -398,12 +398,20 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   }
   case avro::AVRO_BYTES:
   {
-    for (auto i = 0; i < values->n; ++i) {
-      K k_bytes = kK(values)[i];
-      TYPE_CHECK_MAP(field, avro::toString(map_type), KG, k_bytes->t);
-      std::vector<uint8_t> bytes(k_bytes->n);
-      std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(bytes) });
+    if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_bytes = kK(values)[i];
+        TYPE_CHECK_MAP(field, avro::toString(map_type), 0, k_bytes->t);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(DecimalToBytes(field, map_type, map_logical_type, k_bytes)) });
+      }
+    } else {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_bytes = kK(values)[i];
+        TYPE_CHECK_MAP(field, avro::toString(map_type), KG, k_bytes->t);
+        std::vector<uint8_t> bytes(k_bytes->n);
+        std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(bytes) });
+      }
     }
     break;
   }
@@ -421,15 +429,29 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   }
   case avro::AVRO_FIXED:
   {
-    for (auto i = 0; i < values->n; ++i) {
-      K k_bytes = kK(values)[i];
-      const auto fixed_size = map_schema->fixedSize();
-      TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
+    if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_bytes = kK(values)[i];
+        TYPE_CHECK_MAP(field, avro::toString(map_type), 0, k_bytes->t);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DecimalToBytes(field, map_type, map_logical_type, k_bytes))) });
+      }
+    } else if (map_logical_type.type() == avro::LogicalType::DURATION) {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_bytes = kK(values)[i];
+        TYPE_CHECK_MAP(field, avro::toString(map_type), KI, k_bytes->t);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DurationToBytes(field, map_type, k_bytes))) });
+      }
+    } else {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_bytes = kK(values)[i];
+        const auto fixed_size = map_schema->fixedSize();
+        TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
 
-      std::vector<uint8_t> fixed;
-      fixed.resize(k_bytes->n);
-      std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, fixed)) });
+        std::vector<uint8_t> fixed;
+        fixed.resize(k_bytes->n);
+        std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, fixed)) });
+      }
     }
     break;
   }
@@ -441,14 +463,26 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   }
   case avro::AVRO_INT:
   {
-    for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(kI(values)[i]) });
+    if (map_logical_type.type() == avro::LogicalType::DATE || map_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
+      TemporalConversion tc(field, map_logical_type.type());
+      for (auto i = 0; i < values->n; ++i)
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro(kI(values)[i])) });
+    } else {
+      for (auto i = 0; i < values->n; ++i)
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(kI(values)[i]) });
+    }
     break;
   }
   case avro::AVRO_LONG:
   {
-    for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(kJ(values)[i]) });
+    if (map_logical_type.type() == avro::LogicalType::TIME_MICROS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
+      TemporalConversion tc(field, map_logical_type.type());
+      for (auto i = 0; i < values->n; ++i)
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro(kJ(values)[i])) });
+    } else {
+      for (auto i = 0; i < values->n; ++i)
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(kJ(values)[i]) });
+    }
     break;
   }
   case avro::AVRO_NULL:
@@ -462,10 +496,17 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   }
   case avro::AVRO_STRING:
   {
-    for (auto i = 0; i < values->n; ++i) {
-      K k_string = kK(values)[i];
-      TYPE_CHECK_MAP(field, avro::toString(map_type), KC, k_string->t);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)) });
+    if (map_logical_type.type() == avro::LogicalType::UUID) {
+      for (auto i = 0; i < values->n; ++i) {
+        U k_uuid = kU(values)[i];
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(std::string((char*)k_uuid.g, sizeof(U))) });
+      }
+    } else {
+      for (auto i = 0; i < values->n; ++i) {
+        K k_string = kK(values)[i];
+        TYPE_CHECK_ARRAY(field, avro::toString(map_type), KC, k_string->t);
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)) });
+      }
     }
     break;
   }
