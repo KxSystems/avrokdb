@@ -1,0 +1,10 @@
+ 2066  sudo apt install libboost1.71-dev
+ 2067  ls
+ 2068  rm -rf *
+ 2069  cmake .. -DCMAKE_INSTALL_PREFIX="../install"
+ 2070  sudo apt install libboost-filesystem1.71-dev
+ 2071  cmake .. -DCMAKE_INSTALL_PREFIX="../install"
+ 2072  sudo apt install libboost-iostreams1.71-dev
+ 2073  cmake .. -DCMAKE_INSTALL_PREFIX="../install"
+ 2074  sudo apt install libboost-program-options1.71-dev
+ 2075  cmake .. -DCMAKE_INSTALL_PREFIX="../install"

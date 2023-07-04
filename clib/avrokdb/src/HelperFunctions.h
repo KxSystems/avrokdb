@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
+#include <cstring>
 
 #include <k.h>
 
@@ -132,7 +133,7 @@ inline avro::LogicalType GetRealLogicalType(const avro::GenericDatum& datum)
 inline std::string GuidToString(U guid)
 {
   std::stringstream ss;
-  for (auto i = 0; i < sizeof(guid); ++i) {
+  for (auto i = 0ull; i < sizeof(guid); ++i) {
     ss << std::hex << std::setw(2) << std::setfill('0') << (int)guid.g[i];
     if (i == 3 || i == 5 || i == 7 || i == 9)
       ss << '-';
@@ -142,8 +143,8 @@ inline std::string GuidToString(U guid)
 
 inline U StringToGuid(const std::string& guid_string)
 {
-  auto string_index = 0;
-  auto guid_index = 0;
+  size_t string_index = 0;
+  size_t guid_index = 0;
   U result;
   std::memset((void*)result.g, 0, sizeof(result));
   while (string_index < guid_string.length()) {

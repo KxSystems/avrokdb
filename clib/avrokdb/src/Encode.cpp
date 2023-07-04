@@ -92,7 +92,7 @@ void EncodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
     else if (logical_type.type() == avro::LogicalType::DURATION)
       avro_fixed.value() = DurationToBytes(field, avro_type, data);
     else {
-      TYPE_CHECK_FIXED(field, fixed_size, data->n);
+      TYPE_CHECK_FIXED(field, fixed_size, (size_t)data->n);
 
       std::vector<uint8_t> fixed;
       fixed.resize(data->n);
@@ -229,7 +229,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       for (auto i = 0; i < data->n; ++i) {
         K k_bytes = kK(data)[i];
         const auto fixed_size = array_schema->fixedSize();
-        TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
+        TYPE_CHECK_FIXED(field, fixed_size, (size_t)k_bytes->n);
 
         std::vector<uint8_t> fixed;
         fixed.resize(k_bytes->n);
@@ -262,10 +262,10 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     if (array_logical_type.type() == avro::LogicalType::TIME_MICROS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
        TemporalConversion tc(field, array_logical_type.type());
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum(tc.KdbToAvro(kJ(data)[i])));
+        array_data.push_back(avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(data)[i])));
     } else {
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum(kJ(data)[i]));
+        array_data.push_back(avro::GenericDatum((int64_t)kJ(data)[i]));
     }
     break;
   }
@@ -446,7 +446,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       for (auto i = 0; i < values->n; ++i) {
         K k_bytes = kK(values)[i];
         const auto fixed_size = map_schema->fixedSize();
-        TYPE_CHECK_FIXED(field, fixed_size, k_bytes->n);
+        TYPE_CHECK_FIXED(field, fixed_size, (size_t)k_bytes->n);
 
         std::vector<uint8_t> fixed;
         fixed.resize(k_bytes->n);
@@ -479,10 +479,10 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     if (map_logical_type.type() == avro::LogicalType::TIME_MICROS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
       TemporalConversion tc(field, map_logical_type.type());
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro(kJ(values)[i])) });
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(values)[i])) });
     } else {
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(kJ(values)[i]) });
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum((int64_t)kJ(values)[i]) });
     }
     break;
   }

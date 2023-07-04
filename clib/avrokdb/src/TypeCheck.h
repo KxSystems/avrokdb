@@ -59,7 +59,7 @@ public:
 class TypeCheckFixed : public TypeCheck
 {
 public:
-  TypeCheckFixed(const std::string& field, int64_t expected, int64_t received) :
+  TypeCheckFixed(const std::string& field, size_t expected, size_t received) :
     TypeCheck("Invalid fixed length, field: '" + field + "', expected: " + std::to_string(expected) + ", received: " + std::to_string(received))
   {};
 };
