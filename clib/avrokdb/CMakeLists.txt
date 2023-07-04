@@ -6,7 +6,14 @@ cmake_minimum_required(VERSION 3.1.3)
 project(avrokdb CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -DKXVER=3")
-set(CMAKE_CXX_STANDARD 11)
+
+## !!! NB !!!
+## To avoid nasty C++ ABI problems (inevitably resulting in an unexplained coredump) you must set the CMAKE_CXX_STANDARD to the same as was used to build the Boost libraries
+## So on rockylinux:8, yum installs boost built with C++11
+## But on ubuntu:20.06, apt install boost built with C++17
+## These must match...
+#set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

@@ -8,7 +8,12 @@ RUN cd avro-release-1.11.2/lang/c++ && mkdir build && cd build && cmake .. -DCMA
 
 ## avrokdb
 ADD avrokdb avrokdb
-RUN cd avrokdb && rm -rf build && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAVRO_INSTALL=/usr/local && cmake --build . && cmake --build . --target install
+## !!! NB !!!
+## To avoid nasty C++ ABI problems (inevitably resulting in an unexplained coredump) you must set the CMAKE_CXX_STANDARD to the same as was used to build the Boost libraries
+## So on rockylinux:8, yum installs boost built with C++11
+## But on ubuntu:20.06, apt install boost built with C++17
+## These must match...
+RUN cd avrokdb && rm -rf build && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=/usr/local && cmake --build . && cmake --build . --target install
 
 # packaging step
 RUN mkdir /qpbuild
