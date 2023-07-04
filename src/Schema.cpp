@@ -116,106 +116,30 @@ std::shared_ptr<avro::ValidSchema> GetAvroSchema(K avro_schema)
   return AvroSchema::Get(avro_schema)->GetAvroSchema();
 }
 
-
-avro::Schema DeriveSimpleSchema(const std::string name, K data)
+K SchemaFromFile(K filename)
 {
-  switch (data->t) {
-  case 101:
-    return avro::NullSchema();
-  case -KB:
-    return avro::BoolSchema();
-  case KB:
-    return avro::ArraySchema(avro::BoolSchema());
-  case -KI:
-    return avro::IntSchema();
-  case KI:
-    return avro::ArraySchema(avro::IntSchema());
-  case -KJ:
-    return avro::LongSchema();
-  case KJ:
-    return avro::ArraySchema(avro::LongSchema());
-  case -KE:
-    return avro::FloatSchema();
-  case KE:
-    return avro::ArraySchema(avro::FloatSchema());
-  case -KF:
-    return avro::DoubleSchema();
-  case KF:
-    return avro::ArraySchema(avro::DoubleSchema());
-  case KG:
-    return avro::BytesSchema();
-  case KC:
-    return avro::StringSchema();
-  case 0:
-  {
-    if (data->n == 0)
-      throw TypeCheck("DeriveSchema, 0h list of length 0");
-    KdbType first = kK(data)[0]->t;
-    if (first != KC && first != KG)
-      throw TypeCheck("DeriveSchema, 0h list doesn't contain 4|10h");
-    for (auto i = 1; i < data->n; ++i) {
-      if (first != kK(data)[i]->t)
-        throw TypeCheck("DeriveSchema, 0h list contains mixed types");
-    }
-    if (first == KC)
-      return avro::ArraySchema(avro::StringSchema());
-    else // (first == KG)
-      return avro::ArraySchema(avro::BytesSchema());
-  }
-  default:
-    throw TypeCheck("DeriveSchema, invalid type: " + data->t);
-  }
-}
+  if (!IsKdbString(filename))
+    return krr(S("SchemaFromFile, filename expected -11|10h"));
 
-avro::Schema DeriveRecordSchema(const std::string name, K data)
-{
-  avro::RecordSchema record = avro::RecordSchema(name);
-  K keys = kK(data)[0];
-  K values = kK(data)[1];
-
-  if (keys->t != KS)
-    throw TypeCheck("Record keys not 11h");
-  if (values->t != 0)
-    throw TypeCheck("Record values not 0h");
-  assert(keys->n == values->n);
-
-  for (auto i = 0; i < keys->n; ++i) {
-    std::string field_name = kS(keys)[i];
-    K value = kK(values)[i];
-
-    if (field_name.empty() && value->t == 101)
-      continue;
-
-    if (value->t == 99)
-      record.addField(field_name, DeriveRecordSchema(field_name, value));
-    else 
-      record.addField(field_name, DeriveSimpleSchema(field_name, value));
-  }
-  
-  return record;
-}
-
-K DeriveSchema(K data)
-{
   KDB_EXCEPTION_TRY;
 
-  return AvroSchema::KdbConstructor(std::make_shared<avro::ValidSchema>(DeriveRecordSchema("root", data)));
+  auto avro_schema = avro::compileJsonSchemaFromFile(GetKdbString(filename).c_str());
+
+  return AvroSchema::KdbConstructor(std::make_shared<avro::ValidSchema>(avro_schema));
 
   KDB_EXCEPTION_CATCH;
 }
 
-K ReadJsonSchema(K filename)
+K SchemaFromString(K schema)
 {
-  if (!IsKdbString(filename))
-    return krr(S("ReadJsonSchema, filename expected -11|10h"));
+  if (!IsKdbString(schema))
+    return krr(S("SchemaFromString, schema expected -11|10h"));
 
   KDB_EXCEPTION_TRY;
 
-  std::ifstream in(GetKdbString(filename));
-  avro::ValidSchema schema;
-  avro::compileJsonSchema(in, schema);
+  auto avro_schema = avro::compileJsonSchemaFromString(GetKdbString(schema));
 
-  return AvroSchema::KdbConstructor(std::make_shared<avro::ValidSchema>(schema));
+  return AvroSchema::KdbConstructor(std::make_shared<avro::ValidSchema>(avro_schema));
 
   KDB_EXCEPTION_CATCH;
 }
@@ -230,192 +154,6 @@ K GetSchema(K schema)
   std::memcpy(kG(result), schema_str.data(), schema_str.length());
 
   return result;
-
-  KDB_EXCEPTION_CATCH;
-}
-
-K GetBasicSchema(K unused)
-{
-  const char* basicSchemas[] = {
-    "\"null\"",
-    "\"boolean\"",
-    "\"int\"",
-    "\"long\"",
-    "\"float\"",
-    "\"double\"",
-    "\"bytes\"",
-    "\"string\"",
-
-    // Primitive types - longer
-    R"({ "type": "null" })",
-    R"({ "type": "boolean" })",
-    R"({ "type": "int" })",
-    R"({ "type": "long" })",
-    R"({ "type": "float" })",
-    R"({ "type": "double" })",
-    R"({ "type": "bytes" })",
-    R"({ "type": "string" })",
-
-    // Record
-    R"({"type":"record","name":"Test","doc":"Doc_string","fields":[]})",
-    "{\"type\":\"record\",\"name\":\"Test\",\"fields\":"
-    "[{\"name\":\"f\",\"type\":\"long\"}]}",
-    "{\"type\":\"record\",\"name\":\"Test\",\"fields\":"
-    "[{\"name\":\"f1\",\"type\":\"long\",\"doc\":\"field_doc\"},"
-    "{\"name\":\"f2\",\"type\":\"int\"}]}",
-    "{\"type\":\"error\",\"name\":\"Test\",\"fields\":"
-    "[{\"name\":\"f1\",\"type\":\"long\"},"
-    "{\"name\":\"f2\",\"type\":\"int\"}]}",
-
-    // Recursive.
-    "{\"type\":\"record\",\"name\":\"LongList\","
-    "\"fields\":[{\"name\":\"value\",\"type\":\"long\",\"doc\":\"recursive_doc\"},"
-    "{\"name\":\"next\",\"type\":[\"LongList\",\"null\"]}]}",
-    // Enum
-    R"({"type":"enum","doc":"enum_doc","name":"Test","symbols":["A","B"]})",
-
-    // Array
-    R"({"type":"array","doc":"array_doc","items":"long"})",
-    "{\"type\":\"array\",\"items\":{\"type\":\"enum\","
-    "\"name\":\"Test\",\"symbols\":[\"A\",\"B\"]}}",
-
-    // Map
-    R"({"type":"map","doc":"map_doc","values":"long"})",
-    "{\"type\":\"map\",\"values\":{\"type\":\"enum\", "
-    "\"name\":\"Test\",\"symbols\":[\"A\",\"B\"]}}",
-
-    // Union
-    R"(["string","null","long"])",
-
-    // Fixed
-    R"({"type":"fixed","doc":"fixed_doc","name":"Test","size":1})",
-    "{\"type\":\"fixed\",\"name\":\"MyFixed\","
-    "\"namespace\":\"org.apache.hadoop.avro\",\"size\":1}",
-    R"({"type":"fixed","name":"Test","size":1})",
-    R"({"type":"fixed","name":"Test","size":1})",
-
-    // Extra attributes (should be ignored)
-    R"({"type": "null", "extra attribute": "should be ignored"})",
-    R"({"type": "boolean", "extra1": 1, "extra2": 2, "extra3": 3})",
-    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
-    "[{\"name\": \"f\",\"type\": \"long\"}], \"extra attribute\": 1}",
-    "{\"type\": \"enum\", \"name\": \"Test\", \"symbols\": [\"A\", \"B\"],"
-    "\"extra attribute\": 1}",
-    R"({"type": "array", "items": "long", "extra attribute": 1})",
-    R"({"type": "map", "values": "long", "extra attribute": 1})",
-    R"({"type": "fixed", "name": "Test", "size": 1, "extra attribute": 1})",
-
-    // defaults
-    // default double -  long
-    R"({ "name":"test", "type": "record", "fields": [ {"name": "double","type": "double","default" : 2 }]})",
-    // default double - double
-    R"({ "name":"test", "type": "record", "fields": [ {"name": "double","type": "double","default" : 1.2 }]})",
-
-    // namespace with '$' in it.
-    "{\"type\":\"record\",\"name\":\"Test\",\"namespace\":\"a.b$\",\"fields\":"
-    "[{\"name\":\"f\",\"type\":\"long\"}]}",
-
-    // Custom attribute(s) for field in record
-    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
-        "[{\"name\": \"f1\",\"type\": \"long\",\"extra field\": \"1\"}]}",
-    "{\"type\": \"record\",\"name\": \"Test\",\"fields\": "
-        "[{\"name\": \"f1\",\"type\": \"long\","
-        "\"extra field1\": \"1\",\"extra field2\": \"2\"}]}"
-  };
-
-  //avro::compileJsonSchemaFromString(std::string(basicSchemas));
-  return (K)0;
-}
-
-using namespace avro;
-
-#define BOOST_CHECK_EQUAL(x, y) (x == y);
-
-K GetTestSchema(K unused) 
-{
-  KDB_EXCEPTION_TRY;
-
-  RecordSchema record("RootRecord");
-
-  CustomAttributes customAttributeLong;
-  customAttributeLong.addAttribute("extra_info_mylong", std::string("it's a long field"));
-  // Validate that adding a custom attribute with same name is not allowed
-  bool caught = false;
-  try {
-    customAttributeLong.addAttribute("extra_info_mylong", std::string("duplicate"));
-  }
-  catch (Exception& e) {
-    std::cout << "(intentional) exception: " << e.what() << '\n';
-    caught = true;
-  }
-  BOOST_CHECK_EQUAL(caught, true);
-  // Add custom attribute for the field
-  record.addField("mylong", LongSchema(), customAttributeLong);
-
-  IntSchema intSchema;
-  avro::MapSchema map = MapSchema(IntSchema());
-
-  record.addField("mymap", map);
-
-  ArraySchema array = ArraySchema(DoubleSchema());
-
-  const std::string s("myarray");
-  record.addField(s, array);
-
-  EnumSchema myenum("ExampleEnum");
-  myenum.addSymbol("zero");
-  myenum.addSymbol("one");
-  myenum.addSymbol("two");
-  myenum.addSymbol("three");
-
-  caught = false;
-  try {
-    myenum.addSymbol("three");
-  }
-  catch (Exception& e) {
-    std::cout << "(intentional) exception: " << e.what() << '\n';
-    caught = true;
-  }
-  BOOST_CHECK_EQUAL(caught, true);
-
-  record.addField("myenum", myenum);
-
-  UnionSchema onion;
-  onion.addType(NullSchema());
-  onion.addType(map);
-  onion.addType(FloatSchema());
-
-  record.addField("myunion", onion);
-
-  RecordSchema nestedRecord("NestedRecord");
-  nestedRecord.addField("floatInNested", FloatSchema());
-
-  record.addField("nested", nestedRecord);
-
-  record.addField("mybool", BoolSchema());
-  FixedSchema fixed(16, "fixed16");
-  record.addField("myfixed", fixed);
-
-  caught = false;
-  try {
-    record.addField("mylong", LongSchema());
-  }
-  catch (Exception& e) {
-    std::cout << "(intentional) exception: " << e.what() << '\n';
-    caught = true;
-  }
-  BOOST_CHECK_EQUAL(caught, true);
-
-  CustomAttributes customAttributeLong2;
-  customAttributeLong2.addAttribute("extra_info_mylong2",
-    std::string("it's a long field"));
-  customAttributeLong2.addAttribute("more_info_mylong2",
-    std::string("it's still a long field"));
-  record.addField("mylong2", LongSchema(), customAttributeLong2);
-
-  record.addField("anotherint", intSchema);
-
-  return AvroSchema::KdbConstructor(std::make_shared<avro::ValidSchema>(record));
 
   KDB_EXCEPTION_CATCH;
 }

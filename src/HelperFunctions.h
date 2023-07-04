@@ -2,6 +2,8 @@
 
 #include <string>
 #include <stdexcept>
+#include <sstream>
+#include <iomanip>
 
 #include <k.h>
 
@@ -20,7 +22,6 @@
 /////////////////
 // KDB STRINGS //
 /////////////////
-
 
 inline bool IsKdbString(K str)
 {
@@ -92,63 +93,22 @@ public:
   }
 };
 
-/////////////////
-// FLIP TABLES //
-/////////////////
 
-inline K DictFromTable(K table, size_t index)
-{
-  assert(table->t == 98);
-  
-  K keys = kK(table->k)[0];
-  K values = kK(table->k)[1];
+///////////////////
+// GENERIC NULLS //
+///////////////////
 
-  //assert(values->n == 1);
-  //values = kK(values)[0];
-
-  //assert(keys->n == values->n);
-
-  K result = ktn(0, keys->n);
-  std::memset(kK(result), 0, sizeof(K) * keys->n);
-
-  for (auto i = 0; i < values->n; ++i) {
-    K input = kK(values)[i];
-    switch (input->t) {
-    case KB:
-      kK(result)[i] = kb(kG(input)[index]);
-      break;
-    case KI:
-      kK(result)[i] = ki(kI(input)[index]);
-      break;
-    case KJ:
-      kK(result)[i] = kj(kJ(input)[index]);
-      break;
-    case KE:
-      kK(result)[i] = ke(kE(input)[index]);
-      break;
-    case KF:
-      kK(result)[i] = kf(kF(input)[index]);
-      break;
-    case KS:
-      kK(result)[i] = ks(kS(input)[index]);
-      break;
-    case 0:
-      kK(result)[i] = r1(kK(input)[index]);
-      break;
-    default:
-      throw std::invalid_argument("DictFromTable unsupported type: " + input->t);
-    }
-  }
-
-  return xD(r1(keys), result);
-}
-
-inline K identity()
+inline K Identity()
 {
   K id = ka(101);
   id->g = 0;
   return id;
 }
+
+
+////////////////////
+// UNION HANDLING //
+////////////////////
 
 inline avro::Type GetRealType(const avro::GenericDatum& datum)
 {
@@ -162,4 +122,35 @@ inline avro::LogicalType GetRealLogicalType(const avro::GenericDatum& datum)
   if (datum.isUnion())
     return avro::LogicalType(avro::LogicalType::NONE);
   return datum.logicalType();
+}
+
+
+/////////////////
+// GUID STRING //
+/////////////////
+
+inline std::string GuidToString(U guid)
+{
+  std::stringstream ss;
+  for (auto i = 0; i < sizeof(guid); ++i) {
+    ss << std::hex << std::setw(2) << std::setfill('0') << (int)guid.g[i];
+    if (i == 3 || i == 5 || i == 7 || i == 9)
+      ss << '-';
+  }
+  return ss.str();
+}
+
+inline U StringToGuid(const std::string& guid_string)
+{
+  auto string_index = 0;
+  auto guid_index = 0;
+  U result;
+  std::memset((void*)result.g, 0, sizeof(result));
+  while (string_index < guid_string.length()) {
+    result.g[guid_index++] = std::stoi(guid_string.substr(string_index, 2), nullptr, 16);
+    string_index += 2;
+    if (string_index < guid_string.length() && guid_string[string_index] == '-')
+      ++string_index;
+  }
+  return result;
 }

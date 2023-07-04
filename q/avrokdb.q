@@ -7,15 +7,13 @@ if[count key `:/opt/kx/app/avrokdb/; orig_path:first system "pwd"; system "cd /o
 
 init:`avrokdb 2:(`InitialiseAvroKdb; 1);
 
-deriveSchema:`avrokdb 2:(`DeriveSchema; 1);
-readJsonSchema:`avrokdb 2:(`ReadJsonSchema; 1);
+schemaFromFile:`avrokdb 2:(`SchemaFromFile; 1);
+schemaFromString:`avrokdb 2:(`SchemaFromString; 1);
 getSchema:`avrokdb 2:(`GetSchema; 1);
 printSchema:{-1 getSchema[x];};
-getTestSchema:`avrokdb 2:(`GetTestSchema; 1);
 
-encode:`avrokdb 2:(`encode; 2);
-
-decode:`avrokdb 2:(`decode; 2);
+encode:`avrokdb 2:(`Encode; 3);
+decode:`avrokdb 2:(`Decode; 3);
 
 \d .
 

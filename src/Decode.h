@@ -2,5 +2,5 @@
 
 extern "C"
 {
-  EXP K decode(K schema, K data);
+  EXP K Decode(K schema, K data, K options);
 }

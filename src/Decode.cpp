@@ -11,12 +11,13 @@
 #include "Schema.h"
 #include "Decode.h"
 #include "TypeCheck.h"
+#include "KdbOptions.h"
 
 
-K decodeArray(const std::string& field, const avro::GenericArray& array_datum);
-K decodeMap(const std::string& field, const avro::GenericMap& avro_map);
-K decodeRecord(const std::string& field, const avro::GenericRecord& record);
-K decodeUnion(const std::string& field, const avro::GenericDatum& avro_union);
+K DecodeArray(const std::string& field, const avro::GenericArray& array_datum);
+K DecodeMap(const std::string& field, const avro::GenericMap& avro_map);
+K DecodeRecord(const std::string& field, const avro::GenericRecord& record);
+K DecodeUnion(const std::string& field, const avro::GenericDatum& avro_union);
 
 
 K DecimalFromBytes(const std::string& field, avro::LogicalType logical_type, const std::vector<uint8_t>& bytes)
@@ -44,7 +45,7 @@ K DurationFromBytes(const std::string& field, const std::vector<uint8_t>& bytes)
   return result;
 }
 
-K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
+K DecodeDatum(const std::string& field, const avro::GenericDatum& datum, bool decompose_union)
 {
   avro::Type avro_type;
   avro::LogicalType logical_type(avro::LogicalType::NONE);
@@ -117,14 +118,13 @@ K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool de
     }
   }
   case avro::AVRO_NULL:
-    return identity();;
+    return Identity();;
   case avro::AVRO_STRING:
   {
     const auto& string = datum.value<std::string>();
     if (logical_type.type() == avro::LogicalType::UUID) {
-      TYPE_CHECK_KDB(field, avro::toString(avro_type), "avro uuid length", sizeof(U), string.length());
-      U k_guid;
-      std::memcpy(k_guid.g, string.data(), string.length());
+      TYPE_CHECK_KDB(field, avro::toString(avro_type), "avro uuid length", 36, string.length());
+      U k_guid = StringToGuid(string);
       return ku(k_guid);
     } else {
       K result = ktn(KC, string.length());
@@ -133,13 +133,13 @@ K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool de
     }
   }
   case avro::AVRO_RECORD:
-    return decodeRecord(field, datum.value<avro::GenericRecord>());
+    return DecodeRecord(field, datum.value<avro::GenericRecord>());
   case avro::AVRO_ARRAY:
-    return decodeArray(field, datum.value<avro::GenericArray>());
+    return DecodeArray(field, datum.value<avro::GenericArray>());
   case avro::AVRO_UNION:
-    return decodeUnion(field, datum);
+    return DecodeUnion(field, datum);
   case avro::AVRO_MAP:
-    return decodeMap(field, datum.value<avro::GenericMap>());
+    return DecodeMap(field, datum.value<avro::GenericMap>());
 
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
@@ -148,7 +148,7 @@ K decodeDatum(const std::string& field, const avro::GenericDatum& datum, bool de
   }
 }
 
-K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
+K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
 {
   auto array_schema = array_datum.schema();
   assert(array_schema->leaves() == 1);
@@ -255,7 +255,7 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   case avro::AVRO_NULL:
   {
     for (auto i : array_data)
-      kK(result)[index++] = identity();
+      kK(result)[index++] = Identity();
     break;
   }
   case avro::AVRO_STRING:
@@ -263,9 +263,8 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
     if (array_logical_type.type() == avro::LogicalType::UUID) {
       for (auto i : array_data) {
         const auto& string = i.value<std::string>();
-        TYPE_CHECK_KDB(field, avro::toString(array_type), "avro uuid length", sizeof(U), string.length());
-        U k_guid;
-        std::memcpy(k_guid.g, string.data(), string.length());
+        TYPE_CHECK_KDB(field, avro::toString(array_type), "avro uuid length", 36, string.length());
+        U k_guid = StringToGuid(string);
         kU(result)[index++] = k_guid;
       }
     } else {
@@ -280,28 +279,28 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_RECORD:
   {
-    kK(result)[index++] = identity();
+    kK(result)[index++] = Identity();
     for (auto i : array_data)
-      kK(result)[index++] = decodeRecord(field, i.value<avro::GenericRecord>());
+      kK(result)[index++] = DecodeRecord(field, i.value<avro::GenericRecord>());
     break;
   }
   case avro::AVRO_ARRAY:
   {
     for (auto i : array_data)
-      kK(result)[index++] = decodeArray(field, i.value<avro::GenericArray>());
+      kK(result)[index++] = DecodeArray(field, i.value<avro::GenericArray>());
     break;
   }
   case avro::AVRO_UNION:
   {
     for (auto i : array_data)
-      kK(result)[index++] = decodeUnion(field, i);
+      kK(result)[index++] = DecodeUnion(field, i);
     break;
   }
   case avro::AVRO_MAP:
   {
-    kK(result)[index++] = identity();
+    kK(result)[index++] = Identity();
     for (auto i : array_data)
-      kK(result)[index++] = decodeMap(field, i.value<avro::GenericMap>());
+      kK(result)[index++] = DecodeMap(field, i.value<avro::GenericMap>());
     break;
   }
 
@@ -314,7 +313,7 @@ K decodeArray(const std::string& field, const avro::GenericArray& array_datum)
   return result;
 }
 
-K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
+K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
 {
   auto map_schema = map_datum.schema();
   assert(map_schema->leaves() == 2);
@@ -451,7 +450,7 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = identity();
+      kK(values)[index++] = Identity();
     }
     break;
   }
@@ -461,9 +460,8 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
       for (auto i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& string = i.second.value<std::string>();
-        TYPE_CHECK_KDB(field, avro::toString(map_type), "avro uuid length", sizeof(U), string.length());
-        U k_guid;
-        std::memcpy(k_guid.g, string.data(), string.length());
+        TYPE_CHECK_KDB(field, avro::toString(map_type), "avro uuid length", 36, string.length());
+        U k_guid = StringToGuid(string);
         kU(values)[index++] = k_guid;
       }
     } else {
@@ -480,10 +478,10 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   case avro::AVRO_RECORD:
   {
     kS(values)[index] = ss((S)"");
-    kK(values)[index++] = identity();
+    kK(values)[index++] = Identity();
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeRecord(field, i.second.value<avro::GenericRecord>());
+      kK(values)[index++] = DecodeRecord(field, i.second.value<avro::GenericRecord>());
     }
     break;
   }
@@ -491,7 +489,7 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeArray(field, i.second.value<avro::GenericArray>());
+      kK(values)[index++] = DecodeArray(field, i.second.value<avro::GenericArray>());
     }
     break;
   }
@@ -499,17 +497,17 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeUnion(field, i.second);
+      kK(values)[index++] = DecodeUnion(field, i.second);
     }
     break;
   }
   case avro::AVRO_MAP:
   {
     kS(keys)[index] = ss((S)"");
-    kK(values)[index++] = identity();
+    kK(values)[index++] = Identity();
     for (auto i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
-      kK(values)[index++] = decodeMap(field, i.second.value<avro::GenericMap>());
+      kK(values)[index++] = DecodeMap(field, i.second.value<avro::GenericMap>());
     }
     break;
   }
@@ -523,44 +521,56 @@ K decodeMap(const std::string& field, const avro::GenericMap& map_datum)
   return xD(keys, values);
 }
 
-K decodeRecord(const std::string& field, const avro::GenericRecord& record)
+K DecodeRecord(const std::string& field, const avro::GenericRecord& record)
 {
   K keys = ktn(KS, record.fieldCount() + 1);
   kS(keys)[0] = ss((S)"");
   K values = ktn(0, record.fieldCount() + 1);
-  kK(values)[0] = identity();
+  kK(values)[0] = Identity();
 
   size_t index = 1;
   for (auto i = 0; i < record.fieldCount(); ++i) {
     const auto& next = record.fieldAt(i);
     const auto& name = record.schema()->nameAt(i);
     kS(keys)[index] = ss((S)name.c_str());
-    kK(values)[index] = decodeDatum(name, next, false);
+    kK(values)[index] = DecodeDatum(name, next, false);
     ++index;
   }
 
   return xD(keys, values);
 }
 
-K decodeUnion(const std::string& field, const avro::GenericDatum& avro_union)
+K DecodeUnion(const std::string& field, const avro::GenericDatum& avro_union)
 {
   K result = ktn(0, 2);
   kK(result)[0] = kh((I)avro_union.unionBranch());
-  kK(result)[1] = decodeDatum(field, avro_union, true);
+  kK(result)[1] = DecodeDatum(field, avro_union, true);
 
   return result;
 }
 
-K decode(K schema, K data)
+K Decode(K schema, K data, K options)
 {
-  if (data->t != KG)
-    return krr((S)"data not 4h");
+  if (data->t != KG && data->t != KC)
+    return krr((S)"data not 4|10h");
 
   KDB_EXCEPTION_TRY;
 
+  auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
+
   auto avro_schema = GetAvroSchema(schema);
 
-  auto decoder = avro::validatingDecoder(*avro_schema.get(), avro::binaryDecoder());
+  avro::DecoderPtr base_decoder;
+  std::string avro_format = "BINARY";
+  options_parser.GetStringOption(Options::AVRO_FORMAT, avro_format);
+  if (avro_format == "BINARY")
+    base_decoder = avro::binaryDecoder();
+  else if (avro_format == "JSON")
+    base_decoder = avro::jsonDecoder(*avro_schema.get());
+  else
+    return krr((S)"Unsupported avro decoding type (should be BINARY or JSON)");
+
+  auto decoder = avro::validatingDecoder(*avro_schema.get(), base_decoder);
 
   std::istringstream iss;
   iss.str(std::string((char*)kG(data), data->n));
@@ -574,7 +584,7 @@ K decode(K schema, K data)
   reader.read(datum);
   reader.drain();
 
-  return decodeDatum("", datum, false);
+  return DecodeDatum("", datum, false);
 
   KDB_EXCEPTION_CATCH;
 }

@@ -11,12 +11,13 @@
 #include "Schema.h"
 #include "Encode.h"
 #include "TypeCheck.h"
+#include "KdbOptions.h"
 
 
-void encodeArray(const std::string& field, avro::GenericArray& avro_array, K data);
-void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data);
-void encodeRecord(const std::string& field, avro::GenericRecord& record, K data);
-void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data);
+void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K data);
+void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data);
+void EncodeRecord(const std::string& field, avro::GenericRecord& record, K data);
+void EncodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data);
 
 std::vector<uint8_t> DecimalToBytes(const std::string& field, avro::Type avro_type, const avro::LogicalType& logical_type, K data)
 {
@@ -46,7 +47,7 @@ std::vector<uint8_t> DurationToBytes(const std::string& field, avro::Type avro_t
   return fixed;
 }
 
-void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K data, bool decompose_union)
+void EncodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K data, bool decompose_union)
 {
   avro::Type avro_type;
   avro::LogicalType logical_type(avro::LogicalType::NONE);
@@ -128,7 +129,7 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
   case avro::AVRO_STRING:
   {
     if (logical_type.type() == avro::LogicalType::UUID)
-      avro_datum.value<std::string>() = std::string((char*)kG(data), sizeof(U));
+      avro_datum.value<std::string>() = GuidToString(*(U*)kG(data));
     else
       avro_datum.value<std::string>() = std::string((char*)kG(data), data->n);
     break;
@@ -136,24 +137,24 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
   case avro::AVRO_RECORD:
   {
     auto& avro_record = avro_datum.value<avro::GenericRecord>();
-    encodeRecord(field, avro_record, data);
+    EncodeRecord(field, avro_record, data);
     break;
   }
   case avro::AVRO_ARRAY:
   {
     auto& avro_array = avro_datum.value<avro::GenericArray>();
-    encodeArray(field, avro_array, data);
+    EncodeArray(field, avro_array, data);
     break;
   }
   case avro::AVRO_UNION:
   {
-    encodeUnion(field, avro_datum, data);
+    EncodeUnion(field, avro_datum, data);
     break;
   }
   case avro::AVRO_MAP:
   {
     auto& avro_map = avro_datum.value<avro::GenericMap>();
-    encodeMap(field, avro_map, data);
+    EncodeMap(field, avro_map, data);
     break;
   }
 
@@ -164,7 +165,7 @@ void encodeDatum(const std::string& field, avro::GenericDatum& avro_datum, K dat
   }
 }
 
-void encodeArray(const std::string& field, avro::GenericArray& avro_array, K data)
+void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K data)
 {
   assert(avro_array.schema()->leaves() == 1);
   auto array_schema = avro_array.schema()->leafAt(0);
@@ -282,7 +283,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     if (array_logical_type.type() == avro::LogicalType::UUID) {
       for (auto i = 0; i < data->n; ++i) {
         U k_uuid = kU(data)[i];
-        array_data.push_back(avro::GenericDatum(std::string((char*)k_uuid.g, sizeof(U))));
+        array_data.push_back(avro::GenericDatum(GuidToString(k_uuid)));
       }
     } else {
       for (auto i = 0; i < data->n; ++i) {
@@ -304,7 +305,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       TYPE_CHECK_ARRAY(field, avro::toString(sub_array->type()), sub_array_type, k_array->t);
 
       auto array_datum = avro::GenericArray(sub_array);
-      encodeArray(field, array_datum, k_array);
+      EncodeArray(field, array_datum, k_array);
       array_data.push_back(avro::GenericDatum(sub_array, array_datum));
     }
     break;
@@ -318,7 +319,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       TYPE_CHECK_ARRAY(field, avro::toString(array_type), 99, k_record->t);
 
       auto record_datum = avro::GenericRecord(array_schema);
-      encodeRecord(field,  record_datum, k_record);
+      EncodeRecord(field,  record_datum, k_record);
       array_data.push_back(avro::GenericDatum(array_schema, record_datum));
     }
     break;
@@ -330,7 +331,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       TYPE_CHECK_ARRAY(field, avro::toString(array_type), 0, k_union->t);
 
       auto union_datum = avro::GenericDatum(array_schema);
-      encodeUnion(field, union_datum, k_union);
+      EncodeUnion(field, union_datum, k_union);
       array_data.push_back(union_datum);
     }
     break;
@@ -344,7 +345,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       TYPE_CHECK_ARRAY(field, avro::toString(array_type), 99, k_map->t);
 
       auto map_datum = avro::GenericMap(array_schema);
-      encodeMap(field, map_datum, k_map);
+      EncodeMap(field, map_datum, k_map);
       array_data.push_back(avro::GenericDatum(array_schema, map_datum));
     }
     break;
@@ -357,7 +358,7 @@ void encodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   }
 }
 
-void encodeRecord(const std::string& field, avro::GenericRecord& record, K data)
+void EncodeRecord(const std::string& field, avro::GenericRecord& record, K data)
 {
   K keys = kK(data)[0];
   K values = kK(data)[1];
@@ -372,11 +373,11 @@ void encodeRecord(const std::string& field, avro::GenericRecord& record, K data)
       continue;
 
     auto& next = record.field(key);
-    encodeDatum(key, next, value, false);
+    EncodeDatum(key, next, value, false);
   }
 }
 
-void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
+void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 {
   K keys = kK(data)[0];
   K values = kK(data)[1];
@@ -499,7 +500,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     if (map_logical_type.type() == avro::LogicalType::UUID) {
       for (auto i = 0; i < values->n; ++i) {
         U k_uuid = kU(values)[i];
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(std::string((char*)k_uuid.g, sizeof(U))) });
+        map_data.push_back({ kS(keys)[i], avro::GenericDatum(GuidToString(k_uuid)) });
       }
     } else {
       for (auto i = 0; i < values->n; ++i) {
@@ -521,7 +522,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       TYPE_CHECK_MAP(field, avro::toString(sub_array->type()), sub_map_type, k_array->t);
 
       auto array_datum = avro::GenericArray(sub_array);
-      encodeArray(field, array_datum, k_array);
+      EncodeArray(field, array_datum, k_array);
       map_data.push_back({ kS(keys)[i], avro::GenericDatum(sub_array, array_datum) });
     }
     break;
@@ -535,7 +536,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       TYPE_CHECK_MAP(field, avro::toString(map_type), 99, k_record->t);
 
       auto record_datum = avro::GenericRecord(map_schema);
-      encodeRecord(field, record_datum, k_record);
+      EncodeRecord(field, record_datum, k_record);
       map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, record_datum) });
     }
     break;
@@ -547,7 +548,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       TYPE_CHECK_MAP(field, avro::toString(map_type), 0, k_union->t);
 
       auto union_datum = avro::GenericDatum(map_schema);
-      encodeUnion(field, union_datum, k_union);
+      EncodeUnion(field, union_datum, k_union);
       map_data.push_back({ kS(keys)[i], union_datum });
     }
     break;
@@ -561,7 +562,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       TYPE_CHECK_MAP(field, avro::toString(map_type), 99, k_map->t);
 
       auto map_datum = avro::GenericMap(map_schema);
-      encodeMap(field, map_datum, k_map);
+      EncodeMap(field, map_datum, k_map);
       map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, map_datum) });
     }
     break;
@@ -574,7 +575,7 @@ void encodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   }
 }
 
-void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data)
+void EncodeUnion(const std::string& field, avro::GenericDatum& avro_union, K data)
 {
   TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_UNION), "mixed list length", 2, (int)data->n);
 
@@ -589,19 +590,33 @@ void encodeUnion(const std::string& field, avro::GenericDatum& avro_union, K dat
   TYPE_CHECK_KDB(field, avro::toString(avro::AVRO_UNION), "mixed list[0] branch selector", -KH, k_branch->t);
 
   avro_union.selectBranch(k_branch->h);
-  encodeDatum(field, avro_union, k_datum, true);
+  EncodeDatum(field, avro_union, k_datum, true);
 }
 
-K encode(K schema, K data)
+K Encode(K schema, K data, K options)
 {
   KDB_EXCEPTION_TRY;
 
+  auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
+
   auto avro_schema = GetAvroSchema(schema);
+  
+  avro::EncoderPtr base_encoder;
+  std::string avro_format = "BINARY";
+  options_parser.GetStringOption(Options::AVRO_FORMAT, avro_format);
+  if (avro_format == "BINARY")
+    base_encoder = avro::binaryEncoder();
+  else if (avro_format == "JSON")
+    base_encoder = avro::jsonEncoder(*avro_schema.get());
+  else if (avro_format == "JSON_PRETTY")
+    base_encoder = avro::jsonPrettyEncoder(*avro_schema.get());
+  else
+    return krr((S)"Unsupported avro encoding type (should be BINARY, JSON or JSON_PRETTY)");
+  
+  auto encoder = avro::validatingEncoder(*avro_schema.get(), base_encoder);
 
   auto datum = avro::GenericDatum(*avro_schema.get());
-  encodeDatum("", datum, data, false);
-
-  auto encoder = avro::validatingEncoder(*avro_schema.get(), avro::binaryEncoder());
+  EncodeDatum("", datum, data, false);
 
   std::ostringstream oss;
   auto ostream = avro::ostreamOutputStream(oss);
@@ -613,7 +628,7 @@ K encode(K schema, K data)
   encoder->flush();
   const auto str = oss.rdbuf()->str();
 
-  K result = ktn(KG, str.length());
+  K result = ktn(avro_format == "BINARY" ? KG : KC, str.length());
   std::memcpy(kG(result), str.c_str(), str.length());
 
   return result;
