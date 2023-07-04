@@ -8,3 +8,4 @@
  2073  cmake .. -DCMAKE_INSTALL_PREFIX="../install"
  2074  sudo apt install libboost-program-options1.71-dev
  2075  cmake .. -DCMAKE_INSTALL_PREFIX="../install"
+cmake .. -DCMAKE_INSTALL_PREFIX="../install" -DCMAKE_POSITION_INDEPENDENT_CODE=ON

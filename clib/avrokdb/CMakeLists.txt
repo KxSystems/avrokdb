@@ -6,9 +6,10 @@ cmake_minimum_required(VERSION 3.1.3)
 project(avrokdb CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -DKXVER=3")
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(MY_LIBRARY_NAME avrokdb)
 file(GLOB SRC_FILES src/*.cpp)
@@ -35,12 +36,13 @@ include_directories (
     ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include  # where avro-cpp has been installed using vcpkg
     ${CMAKE_BINARY_DIR} # For 'k.h', downloaded below
 )
-if ("${AVRO_LIBRARY}" EQUAL "")
+#if (NOT ${AVRO_LIBRARY})
+    message(STATUS "Looking for avrocpp.so")
 	find_library(AVRO_LIBRARY
-		NAMES avrocpp
+		NAMES avrocpp_s avrocpp
 		HINTS "${AVRO_INSTALL}/lib/"
 	)
-endif()
+#endif()
 
 message(STATUS "Avro library : ${AVRO_LIBRARY}")
 
@@ -55,8 +57,8 @@ if (MSVC)
 else()
     set(INSTALL_SCRIPT "install.sh")
     set(LINK_LIBS "")
-#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-strict-aliasing")
-#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-aliasing")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-strict-aliasing")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-aliasing")
 endif()
     
 add_library (${MY_LIBRARY_NAME} SHARED ${SRC_FILES})
@@ -67,8 +69,7 @@ IF(APPLE)
 endif()
 
 if (NOT MSVC)  
-  set (STATIC_CPP "-pthread")
-  #set(STATIC_CPP "-static-libgcc -static-libstdc++")
+  set(STATIC_CPP "-static-libgcc -static-libstdc++")
 endif()
 
 target_link_libraries(${MY_LIBRARY_NAME} ${STATIC_CPP} ${AVRO_LIBRARY} ${LINK_LIBS})

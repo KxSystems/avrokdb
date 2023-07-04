@@ -3,7 +3,7 @@
 // Quick hack for running with qpacker
 orig_path:"";
 // running as avrokdb.qpk dependency:
-if[count key `:/opt/kx/app/avrokdb/; orig_path:first system "pwd"; system "cd /opt/kx/app/avrokdb/"];
+if[count key `:/opt/kx/app/clib/; orig_path:first system "pwd"; system "cd /opt/kx/app/clib/"];
 
 init:`avrokdb 2:(`InitialiseAvroKdb; 1);
 

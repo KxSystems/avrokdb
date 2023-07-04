@@ -1,0 +1,10 @@
+{
+        "avrokdb": {
+                "depends": [ "clib" ],
+                "entry": [ "q/avrokdb.q" ]
+        },
+        "tests": {
+                "depends": [ "clib" ],
+                "entry": [ "tests/test.q" ]
+        }
+}
