@@ -1,0 +1,50 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": "boolean"
+        },
+        {
+            "name": "b",
+            "type": "bytes"
+        },
+        {
+            "name": "c",
+            "type": "double"
+        },
+        {
+            "name": "d",
+            "type": { "type": "enum", "name": "myenum", "symbols": ["AA", "BB", "CC"] }
+        },
+        {
+            "name": "e",
+            "type": { "type": "fixed", "name": "myfixed", "size": 4 }
+        },
+        {
+            "name": "f",
+            "type": "float"
+        },
+        {
+            "name": "g",
+            "type": "int"
+        },
+        {
+            "name": "h",
+            "type": "long"
+        },
+        {
+            "name": "i",
+            "type": "null"
+        },
+        {
+            "name": "j",
+            "type": "string"
+        },
+        {
+            "name": "k",
+            "type": ["string","null","long"]
+        }
+    ]
+}

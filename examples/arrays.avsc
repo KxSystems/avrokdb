@@ -1,0 +1,50 @@
+{
+    "type": "record",
+    "name": "root",
+    "fields": [
+        {
+            "name": "a",
+            "type": { "type": "array", "items": "boolean" }
+        },
+        {
+            "name": "b",
+            "type": { "type": "array", "items": "bytes" }
+        },
+        {
+            "name": "c",
+            "type": { "type": "array", "items": "double" }
+        },
+        {
+            "name": "d",
+            "type": { "type": "array", "items": { "type": "enum", "name": "myenum", "symbols": ["AA", "BB", "CC"] } }
+        },
+        {
+            "name": "e",
+            "type": { "type": "array", "items": { "type": "fixed", "name": "myfixed", "size": 4 } }
+        },
+        {
+            "name": "f",
+            "type": { "type": "array", "items": "float" }
+        },
+        {
+            "name": "g",
+            "type": { "type": "array", "items": "int" }
+        },
+        {
+            "name": "h",
+            "type": { "type": "array", "items": "long" }
+        },
+        {
+            "name": "i",
+            "type": { "type": "array", "items": "null" }
+        },
+        {
+            "name": "j",
+            "type": { "type": "array", "items": "string" }
+        },
+        {
+            "name": "k",
+            "type": { "type": "array", "items": ["string","null","long"] }
+        }
+    ]
+}

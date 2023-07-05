@@ -1,92 +1,164 @@
-# avrokdb
+# Avrokdb
+
+## Introduction
+
+Avrokdb supports the use of [Apache Avro](https://avro.apache.org/docs/) from within kdb+.  Encoding converts a kdb+ object to Avro serialised using the specified Avro schema, decoding converts Avro serialised to a kdb+ object object using the specified Avro schema.  It support all the Avro datatypes:
+
+- array
+- bool
+- bytes
+- double
+- enum
+- fixed
+- float
+- int
+- long
+- map
+- null
+- string
+- union
+
+and all the Avro logical types:
+
+* date
+* decimal
+* duration
+* time-millis
+* time-micros
+* timestamp-millis
+* timestamp-micros
+* uuid
+
+Full details of the type-mapping between Avro and kdb+ are described [here](./docs/type-mapping.md)
 
 
 
-## Getting started
+## Functionality
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Avrokdb allows you to:
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+* Compile Avro JSON schemas
+* Encode a kdb+ object to Avro serialised data in either binary or JSON format
+* Decode Avro serialised data in either binary or JSON format to a kdb+ object
 
-## Add your files
+See [avrodb.q](./q/avrokdb.q) for a full function reference.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+
+
+## Avro schemas
+
+Avro data is not self describing, it requires a schema to be defined and used during both the encoding and decoding process.  Details of how to define an Avro JSON schema can be found [here](https://avro.apache.org/docs/1.11.1/specification/). 
+
+
+
+## Qpacker install
+
+A user can pick up the `avrokdb.qpk` file and add it as a dependency in the application:
+
+```json
+{
+  "default": {
+    "entry": ["myapp.q"],
+    "depends": ["avrokdb"]
+  }
+}
+```
+
+> You can get a pre-built avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/rt/rt_archiver/-/packages), or using q-packer:
+
+```plaintext
+qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.0
+```
+
+
+
+## Building from source (linux)
+
+The [Dockerfile.qp](./clib/Dockerfile.qp) describes how to build `avrokdb.so` from source, including the dependencies (such as avrocpp and boost).
+
+The base dependencies required to build avrocpp for yum package managers are:
+
+* boost-devel.x86_64
+* boost-filesystem.x86_64
+* boost-iostreams.x86_64
+* boost-program-options.x86_64
+* snappy-devel.x86_64
+
+The base dependencies required to build avrocpp for apt package managers are:
+
+* libboost1.71-dev
+* libboost-filesystem1.71-dev
+* libboost-iostreams1.71-dev
+* libboost-program-options1.71-dev
+* libsnappy-dev
+
+### Note
+
+To avoid nasty C++ ABI problems (inevitably resulting in an unexplained coredump) you must set the `CMAKE_CXX_STANDARD` when building avrokdb to the same as was used to build the Boost libraries, e.g.:
+
+- On rockylinux:8, yum installs boost built with C++11
+- On ubuntu:20.04, apt installs boost built with C++17
+
+
+
+## Building from source (Windows)
+
+It is also possible to build avrokdb in Windows using [vcpkg](https://vcpkg.io/en/).
+
+Download the vcpkg repo and run `bootstrap-vcpkg.bat` (full instructions are [here](https://github.com/microsoft/vcpkg)).
+
+```bash
+C:\Git> git clone https://github.com/microsoft/vcpkg.git
+C:\Git> cd vcpkg
+C:\Git\vcpkg> bootstrap-vcpkg.bat
+```
+
+Then install avrocpp and its dependencies:
+
+```bash
+C:\Git\vcpkg> vcpkg install avro-cpp:x64-windows
+```
+
+Then build avrokdb, point `$AVRO_INSTALL` to the the vcpkg directory containing the avrocpp package:
+
+```bash
+C:\Git\avrokdb\clib\avrokdb> mkdir build
+C:\Git\avrokdb\clib\avrokdb> cd build
+C:\Git\avrokdb\clib\avrokdb\build> cmake .. -DAVRO_INSTALL="C:/Git/vcpkg/packages/avro-cpp_x64-windows"
+C:\Git\avrokdb\clib\avrokdb\build> cmake --build . --config Release
+```
+
+The `Release` directory will contain `avrokdb.dll` and all its dependencies which need to be available to q:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/kxdev/interop/avrokdb.git
-git branch -M main
-git push -uf origin main
+C:\Git\avrokdb\clib\avrokdb\build>cd Release
+
+C:\Git\avrokdb\clib\avrokdb\build\Release>dir
+ Volume in drive C is Windows
+ Volume Serial Number is 2241-3CD0
+
+ Directory of C:\Git\avrokdb\clib\avrokdb\build\Release
+
+05/07/2023  16:55    <DIR>          .
+05/07/2023  16:55    <DIR>          ..
+15/06/2023  11:02           781,824 avrocpp.dll
+05/07/2023  16:55           361,984 avrokdb.dll
+05/07/2023  16:55             1,266 avrokdb.exp
+05/07/2023  16:55             2,630 avrokdb.lib
+15/06/2023  11:01            78,848 boost_iostreams-vc143-mt-x64-1_81.dll
+06/04/2023  14:30            75,264 bz2.dll
+14/06/2023  17:20           183,808 liblzma.dll
+06/04/2023  14:37            89,600 zlib1.dll
+06/04/2023  14:38           637,440 zstd.dll
+               9 File(s)      2,212,664 bytes
+               2 Dir(s)  82,162,450,432 bytes free
 ```
 
-## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.com/kxdev/interop/avrokdb/-/settings/integrations)
 
-## Collaborate with your team
+## Examples
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+See [example.q](./example.q) for a basic example.
 
-## Test and Deploy
+More detailed examples of all the Avro datatype and logical type can be found in the [tests](./tests/) directory.
 
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.

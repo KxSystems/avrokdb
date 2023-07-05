@@ -5,7 +5,7 @@
 
 extern "C"
 {
-  /// @brief Initialise the q bindings for avrokdb
+  /// @brief Initialise avrokdb
   /// 
   /// @param unused 
   /// 

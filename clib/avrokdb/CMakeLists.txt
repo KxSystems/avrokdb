@@ -43,13 +43,12 @@ include_directories (
     ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include  # where avro-cpp has been installed using vcpkg
     ${CMAKE_BINARY_DIR} # For 'k.h', downloaded below
 )
-#if (NOT ${AVRO_LIBRARY})
-    message(STATUS "Looking for avrocpp.so")
-	find_library(AVRO_LIBRARY
-		NAMES avrocpp_s avrocpp
-		HINTS "${AVRO_INSTALL}/lib/"
-	)
-#endif()
+
+message(STATUS "Looking for avrocpp")
+find_library(AVRO_LIBRARY
+	NAMES avrocpp_s avrocpp
+	HINTS "${AVRO_INSTALL}/lib/"
+)
 
 message(STATUS "Avro library : ${AVRO_LIBRARY}")
 
