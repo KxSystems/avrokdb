@@ -1,7 +1,4 @@
 ---
-variables:
-  QP_IMAGE_VERSION: "1.1.50"
-
 include:
   - project: 'kxdev/shared-tools/ci-templates'
     ref: main
@@ -10,9 +7,12 @@ include:
       - 'insights/qbuild.yaml'
       - 'security/security.yaml'
 
+variables:
+  DOCKER_HOST: "tcp://docker-engine-0.docker-engine:2375"
+
 default:
   tags:
-    - kxi-gitlab-runner
+    - k8s-aws-green
 
 stages:
   - build
