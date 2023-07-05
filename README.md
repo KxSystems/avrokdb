@@ -29,7 +29,7 @@ and all the Avro logical types:
 * timestamp-micros
 * uuid
 
-Full details of the type-mapping between Avro and kdb+ are described [here](./docs/type-mapping.md)
+Full details of the type-mapping between Avro and kdb+ are described [here](./docs/type-mapping.md).
 
 
 
@@ -64,7 +64,7 @@ A user can pick up the `avrokdb.qpk` file and add it as a dependency in the appl
 }
 ```
 
-> You can get a pre-built avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/rt/rt_archiver/-/packages), or using q-packer:
+You can get a pre-built avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
 
 ```plaintext
 qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.0
@@ -128,9 +128,9 @@ C:\Git\avrokdb\clib\avrokdb\build> cmake .. -DAVRO_INSTALL="C:/Git/vcpkg/package
 C:\Git\avrokdb\clib\avrokdb\build> cmake --build . --config Release
 ```
 
-The `Release` directory will contain `avrokdb.dll` and all its dependencies which need to be available to q:
+The `Release` directory will contain `avrokdb.dll` and all its dependencies which need to be made available to q (e.g. in `$QHOME/w64`):
 
-```
+```bash
 C:\Git\avrokdb\clib\avrokdb\build>cd Release
 
 C:\Git\avrokdb\clib\avrokdb\build\Release>dir
@@ -158,7 +158,7 @@ C:\Git\avrokdb\clib\avrokdb\build\Release>dir
 
 ## Examples
 
-See [example.q](./example.q) for a basic example.
+See [example.q](./examples/example.q) for a basic example.
 
 More detailed examples of all the Avro datatype and logical type can be found in the [tests](./tests/) directory.
 
