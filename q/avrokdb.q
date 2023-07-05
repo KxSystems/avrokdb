@@ -1,9 +1,17 @@
 \d .avro
 
-// Quick hack for running with qpacker
-orig_path:"";
-// running as avrokdb.qpk dependency:
-if[count key `:/opt/kx/app/clib/; orig_path:first system "pwd"; system "cd /opt/kx/app/clib/"];
+// Try to find avrodkb.so in a qpacker container
+avrokdb_lib:`avrokdb;
+if[not .z.o like "w*";
+    potential_sos:@[system; "find /opt/kx/app -name 'avrokdb.so' 2>/dev/null"; ()];
+    if [not 0 = num_sos:count potential_sos;
+        avrokdbso_path:first potential_sos;
+        avrokdb_lib:`$-3_avrokdbso_path;
+        if [num_sos > 1;
+            -1 .j.j(`component`time`level`message)!("avrokdb"; (string `date$.z.p), "T", (string .z.t), "z"; "INFO"; "Multiple avrokdb.so found, using ", avrokdbso_path)
+            ]
+        ]
+    ]
 
 
 /// @brief Create a compiled Avro schema from a JSON file
@@ -12,7 +20,7 @@ if[count key `:/opt/kx/app/clib/; orig_path:first system "pwd"; system "cd /opt/
 ///
 /// @return foreign containing the compiled Avro schema.  This will be garbage
 /// collected when its refcount drops to zero.
-schemaFromFile:`avrokdb 2:(`SchemaFromFile; 1);
+schemaFromFile:avrokdb_lib 2:(`SchemaFromFile; 1);
 
 /// @brief Create a compiled Avro schema from a JSON string
 ///
@@ -20,7 +28,7 @@ schemaFromFile:`avrokdb 2:(`SchemaFromFile; 1);
 ///
 /// @return foreign containing the compiled Avro schema.  This will be garbage
 /// collected when its refcount drops to zero.
-schemaFromString:`avrokdb 2:(`SchemaFromString; 1);
+schemaFromString:avrokdb_lib 2:(`SchemaFromString; 1);
 
 /// @brief Return a pretty-printed JSON string detailing the Avro compiled
 /// schema
@@ -28,7 +36,7 @@ schemaFromString:`avrokdb 2:(`SchemaFromString; 1);
 /// @param schema.  Foreign object containing the Avro schema to display. 
 ///
 /// @return String containing the Avro JSON schema
-getSchema:`avrokdb 2:(`GetSchema; 1);
+getSchema:avrokdb_lib 2:(`GetSchema; 1);
 printSchema:{-1 getSchema[x];};
 
 
@@ -52,7 +60,7 @@ printSchema:{-1 getSchema[x];};
 ///
 /// @return Avro serialised data, either 4h for binary encoding or 10h for
 /// JSON encoding.
-encode:`avrokdb 2:(`Encode; 3);
+encode:avrokdb_lib 2:(`Encode; 3);
 
 /// @brief Decode Avro serialised data to a kdb+ object
 ///
@@ -73,7 +81,7 @@ encode:`avrokdb 2:(`Encode; 3);
 ///
 /// @return kdb+ object representing the Avro data having applied the
 /// appropriate type mappings
-decode:`avrokdb 2:(`Decode; 3);
+decode:avrokdb_lib 2:(`Decode; 3);
 
 
 /// @brief Initialise avrokdb
@@ -81,11 +89,8 @@ decode:`avrokdb 2:(`Decode; 3);
 /// @param unused 
 /// 
 /// @return null
-init:`avrokdb 2:(`InitialiseAvroKdb; 1);
+init:avrokdb_lib 2:(`InitialiseAvroKdb; 1);
 
 \d .
 
 .avro.init[];
-
-// Quick hack for running with qpacker
-if[count .avro.orig_path; system "cd ", .avro.orig_path];

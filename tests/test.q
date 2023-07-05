@@ -1,13 +1,4 @@
-// Quick hack for running with qpacker
-orig_path:first system "pwd";
-// running as avrokdb.qpk dependency:
-if[count key `:/opt/kx/app/; system "cd /opt/kx/app/"];
-
 \l q/avrokdb.q
-
-// Quick hack for running with qpacker
-if[count .avro.orig_path; system "cd ", .avro.orig_path];
-
 
 runTests:{[options]
     -1 "<----- Single simple type ----->";
