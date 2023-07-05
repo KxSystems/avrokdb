@@ -529,7 +529,7 @@ K DecodeRecord(const std::string& field, const avro::GenericRecord& record)
   kK(values)[0] = Identity();
 
   size_t index = 1;
-  for (auto i = 0; i < record.fieldCount(); ++i) {
+  for (auto i = 0ull; i < record.fieldCount(); ++i) {
     const auto& next = record.fieldAt(i);
     const auto& name = record.schema()->nameAt(i);
     kS(keys)[index] = ss((S)name.c_str());
