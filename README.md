@@ -84,7 +84,7 @@ A user can pick up the `avrokdb.qpk` file and add it as a dependency in the appl
 You can get a pre-built `avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
 
 ```bash
-qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.3
+qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.5
 ```
 
 
