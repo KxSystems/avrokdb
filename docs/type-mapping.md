@@ -6,6 +6,20 @@ It also support logical types which are annotations on other basic types and are
 
 Note that Avro data is not self describing, it requires a schema to be defined and used during both the encoding and decoding process. 
 
+## Record datatype
+
+An Avro record contains [a set of field where each field has its own datatype](https://avro.apache.org/docs/1.11.1/specification/#schema-record).
+
+The kdb+ representation of a record is a 99h where the dictionary keys are a 11h and the dictionary values are a 0h.  Each item is the dictionary values mixed list has the kdb+ type corresponding to that field's datatype.
+
+In order to prevent type promotion where all the fields have the same datatype (although an Avro map would be more suitable for this use case) a null symbol key with corresponding generic null (::) value should be added to the dictionary (and is ignored).  For consistency `avrokdb` also adds a null symbol key with corresponding generic null (::) as the first item in the dictionary when decoding a record. 
+
+## Map datatype
+
+An Avro map contains [a named set of values where each value has the same datatype](https://avro.apache.org/docs/1.11.1/specification/#maps).
+
+The kdb+ representation of a map a 99h where the dictionary keys are a 11h.  The kdb+ type of the dictionary values list follows the type mapping used for arrays of the map's datatype.  
+
 ## Scalar datatypes
 
 The type mappings between Avro scalars and kdb+ objects follow the convention:
@@ -82,20 +96,6 @@ An Avro array is [list of another Avro datatype](https://avro.apache.org/docs/1.
 ### Additional notes
 
 As described in the notes an array of records or an array of maps require a generic null (::) to be added to the mixed list while encoding to prevent type promotion.  For consistency `avrokdb` also adds a generic null (::) as the first item in the mixed list when decoding an array of records or an array of maps. 
-
-## Record datatype
-
-An Avro record contains [a set of field where each field has its own datatype](https://avro.apache.org/docs/1.11.1/specification/#schema-record).
-
-The kdb+ representation of a record is a 99h where the dictionary keys are a 11h and the dictionary values are a 0h.  
-
-In order to prevent type promotion where all the fields have the same datatype (although an Avro map would be more suitable for this use case) a null symbol key with corresponding generic null (::) value should be added to the dictionary (and is ignored).  For consistency `avrokdb` also adds a null symbol key with corresponding generic null (::) as the first item in the dictionary when decoding a record. 
-
-## Map datatype
-
-An Avro map contains [a named set of values where each value has the same datatype](https://avro.apache.org/docs/1.11.1/specification/#maps).
-
-The kdb+ representation of a map a 99h where the dictionary keys are a 11h.  The dictionary values list follows the type mapping used for arrays of the map's datatype.  
 
 ## Union datatype
 
