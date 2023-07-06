@@ -51,6 +51,23 @@ Avro data is not self describing, it requires a schema to be defined and used du
 
 
 
+## Qpacker build
+
+Clone the `avrokdb` repo then run:
+
+```bash
+qp build
+```
+
+This creates two qpacker targets:
+
+```bash
+qp run avrokdb // to run standalone
+qp run tests   // to run the tests suite
+```
+
+
+
 ## Qpacker install
 
 A user can pick up the `avrokdb.qpk` file and add it as a dependency in the application:
@@ -64,10 +81,10 @@ A user can pick up the `avrokdb.qpk` file and add it as a dependency in the appl
 }
 ```
 
-You can get a pre-built avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
+You can get a pre-built `avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
 
-```plaintext
-qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.0
+```bash
+qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.3
 ```
 
 
@@ -160,5 +177,5 @@ C:\Git\avrokdb\clib\avrokdb\build\Release>dir
 
 See [example.q](./examples/example.q) for a basic example.
 
-More detailed examples of all the Avro datatype and logical type can be found in the [tests](./tests/) directory.
+More detailed examples of all the Avro datatypes and logical types can be found in the [tests](./tests/) directory.
 
