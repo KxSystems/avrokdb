@@ -63,10 +63,8 @@ private:
   ~ForeignSet()
   {
     std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
-    for (auto i : valid_foreign_data) {
-      std::cout << "Destructing " << std::hex << i << std::endl;
+    for (auto i : valid_foreign_data)
       delete i;
-    }
 
     valid_foreign_data.clear();
   }
@@ -112,7 +110,6 @@ K ForeignSet<T>::KdbDestructor(K foreign_)
 
   // Delete the Foreign object.  This will decrement the refcounts of the
   // shared pointers to allow them to be deleted. 
-  std::cout << "Destructing " << std::hex << foreign_data << std::endl;
   ForeignSet::Instance().Remove(foreign_data);
   delete foreign_data;
 
@@ -127,7 +124,6 @@ K ForeignSet<T>::KdbConstructor(std::shared_ptr<T> foreign_)
   // Use a raw new rather than a smart point since kdb will be controlling the
   // lifetime via its refcount
   auto* foreign_data = new Foreign(foreign_);
-  std::cout << "Constructing " << std::hex << foreign_data << std::endl;
   Add(foreign_data);
   K result = knk(2, KdbDestructor, foreign_data);
   result->t = 112;

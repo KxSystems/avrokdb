@@ -156,6 +156,7 @@
     <ClCompile Include="..\src\Encode.cpp" />
     <ClCompile Include="..\src\HelperFunctions.cpp" />
     <ClCompile Include="..\src\Schema.cpp" />
+    <ClCompile Include="..\src\TypeCheck.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
