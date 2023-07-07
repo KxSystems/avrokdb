@@ -145,3 +145,14 @@ std::shared_ptr<T> GetForeign(K foreign)
   return ForeignSet<T>::Instance().Get(foreign)->GetForeign();
 }
 
+template <typename T>
+K MakeForeign(std::shared_ptr<T> foreign)
+{
+  return ForeignSet<T>::Foreign::KdbConstructor(foreign);
+}
+
+template <typename T>
+K MakeForeign(T foreign)
+{
+  return ForeignSet<T>::Foreign::KdbConstructor(std::make_shared<T>(foreign));
+}

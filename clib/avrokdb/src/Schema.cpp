@@ -27,7 +27,7 @@ K SchemaFromFile(K filename)
 
   auto avro_schema = avro::compileJsonSchemaFromFile(GetKdbString(filename).c_str());
 
-  return ForeignSet<avro::ValidSchema>::Foreign::KdbConstructor(std::make_shared<avro::ValidSchema>(avro_schema));
+  return MakeForeign(avro_schema);
 
   KDB_EXCEPTION_CATCH;
 }
@@ -41,7 +41,7 @@ K SchemaFromString(K schema)
 
   auto avro_schema = avro::compileJsonSchemaFromString(GetKdbString(schema));
 
-  return ForeignSet<avro::ValidSchema>::Foreign::KdbConstructor(std::make_shared<avro::ValidSchema>(avro_schema));
+  return MakeForeign(avro_schema);
 
   KDB_EXCEPTION_CATCH;
 }
