@@ -84,13 +84,4 @@ encode:avrokdb_lib 2:(`Encode; 3);
 decode:avrokdb_lib 2:(`Decode; 3);
 
 
-/// @brief Initialise avrokdb
-/// 
-/// @param unused 
-/// 
-/// @return null
-init:avrokdb_lib 2:(`InitialiseAvroKdb; 1);
-
 \d .
-
-.avro.init[];

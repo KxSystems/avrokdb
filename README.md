@@ -84,7 +84,7 @@ A user can pick up the `avrokdb.qpk` file and add it as a dependency in the appl
 You can get a pre-built `avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
 
 ```bash
-qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.5
+qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.6
 ```
 
 
@@ -93,7 +93,7 @@ qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.5
 
 The [Dockerfile.qp](./clib/Dockerfile.qp) describes how to build `avrokdb.so` from source, including the dependencies (such as avrocpp and boost).
 
-The base dependencies required to build avrocpp for yum package managers are:
+The base dependencies required to build avrocpp for yum package managers are (rockylinux:8):
 
 * boost-devel.x86_64
 * boost-filesystem.x86_64
@@ -101,7 +101,7 @@ The base dependencies required to build avrocpp for yum package managers are:
 * boost-program-options.x86_64
 * snappy-devel.x86_64
 
-The base dependencies required to build avrocpp for apt package managers are:
+The base dependencies required to build avrocpp for apt package managers are (ubuntu:20.04):
 
 * libboost1.71-dev
 * libboost-filesystem1.71-dev

@@ -145,8 +145,8 @@
   <ItemGroup>
     <ClInclude Include="..\src\Decode.h" />
     <ClInclude Include="..\src\Encode.h" />
+    <ClInclude Include="..\src\GenericForeign.h" />
     <ClInclude Include="..\src\HelperFunctions.h" />
-    <ClInclude Include="..\src\InitialiseKdb.h" />
     <ClInclude Include="..\src\KdbOptions.h" />
     <ClInclude Include="..\src\Schema.h" />
     <ClInclude Include="..\src\TypeCheck.h" />
@@ -155,7 +155,6 @@
     <ClCompile Include="..\src\Decode.cpp" />
     <ClCompile Include="..\src\Encode.cpp" />
     <ClCompile Include="..\src\HelperFunctions.cpp" />
-    <ClCompile Include="..\src\InitialiseKdb.cpp" />
     <ClCompile Include="..\src\Schema.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

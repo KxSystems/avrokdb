@@ -12,6 +12,7 @@
 #include "Decode.h"
 #include "TypeCheck.h"
 #include "KdbOptions.h"
+#include "GenericForeign.h"
 
 
 K DecodeArray(const std::string& field, const avro::GenericArray& array_datum);
@@ -558,7 +559,7 @@ K Decode(K schema, K data, K options)
 
   auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
 
-  auto avro_schema = GetAvroSchema(schema);
+  auto avro_schema = GetForeign<avro::ValidSchema>(schema);
 
   avro::DecoderPtr base_decoder;
   std::string avro_format = "BINARY";

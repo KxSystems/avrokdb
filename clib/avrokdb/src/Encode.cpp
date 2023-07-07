@@ -12,6 +12,7 @@
 #include "Encode.h"
 #include "TypeCheck.h"
 #include "KdbOptions.h"
+#include "GenericForeign.h"
 
 
 void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K data);
@@ -599,7 +600,7 @@ K Encode(K schema, K data, K options)
 
   auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
 
-  auto avro_schema = GetAvroSchema(schema);
+  auto avro_schema = GetForeign<avro::ValidSchema>(schema);
   
   avro::EncoderPtr base_encoder;
   std::string avro_format = "BINARY";

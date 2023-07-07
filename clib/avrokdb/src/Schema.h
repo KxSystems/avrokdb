@@ -1,13 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <set>
+#include <mutex>
 
 #include "HelperFunctions.h"
-
-
-void AvroSchemaExitHandler();
-
-std::shared_ptr<avro::ValidSchema> GetAvroSchema(K avro_schema);
 
 
 extern "C" {
