@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <set>
-#include <shared_mutex>
+#include <mutex>
 
 #include "HelperFunctions.h"
 
@@ -30,7 +30,7 @@ private:
 
 private:
   std::set<Foreign*> valid_foreign_data;
-  std::shared_timed_mutex valid_foreign_data_mutex;
+  std::mutex valid_foreign_data_mutex;
 
 public:
   // InvalidForeign is thrown if an invalid foreign object is specified
@@ -44,25 +44,25 @@ public:
 private:
   void Add(Foreign* foreign_data)
   {
-    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
+    std::lock_guard<std::mutex> lock(valid_foreign_data_mutex);
     valid_foreign_data.insert(foreign_data);
   }
 
   void Remove(Foreign* foreign_data)
   {
-    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
+    std::lock_guard<std::mutex> lock(valid_foreign_data_mutex);
     valid_foreign_data.erase(foreign_data);
   }
 
   bool Find(Foreign* foreign_data)
   {
-    std::shared_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
+    std::lock_guard<std::mutex> lock(valid_foreign_data_mutex);
     return valid_foreign_data.find(foreign_data) != valid_foreign_data.end();
   }
 
   ~ForeignSet()
   {
-    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
+    std::lock_guard<std::mutex> lock(valid_foreign_data_mutex);
     for (auto i : valid_foreign_data)
       delete i;
 
