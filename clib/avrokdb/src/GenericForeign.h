@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <set>
-#include <mutex>
+#include <shared_mutex>
 
 #include "HelperFunctions.h"
 
@@ -10,33 +10,27 @@
 template <typename T>
 class ForeignSet
 {
-public:
+private:
   class Foreign
   {
   private:
     std::shared_ptr<T> foreign;
 
-  private:
-    // Constructor is private and only used by KdbConstructor static function 
+  public:
     Foreign(std::shared_ptr<T> foreign_) :
       foreign(foreign_)
     {};
 
-  public:
-    // KdbDestructor is registered as foreign object destructor callback
-    static K KdbDestructor(K foreign_);
-
-    // Creates the Foreign object and wraps it in a kdb
-    // foreign object
-    static K KdbConstructor(std::shared_ptr<T> foreign_);
-
     // Getter functions for object members
-    std::shared_ptr<T> GetForeign();
+    std::shared_ptr<T> GetForeign()
+    {
+      return foreign;
+    }
   };
 
 private:
   std::set<Foreign*> valid_foreign_data;
-  std::mutex valid_foreign_data_mutex;
+  std::shared_timed_mutex valid_foreign_data_mutex;
 
 public:
   // InvalidForeign is thrown if an invalid foreign object is specified
@@ -47,42 +41,41 @@ public:
     {};
   };
 
+private:
   void Add(Foreign* foreign_data)
   {
-    std::lock_guard<std::mutex> lg(valid_foreign_data_mutex);
+    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
     valid_foreign_data.insert(foreign_data);
   }
 
   void Remove(Foreign* foreign_data)
   {
-    std::lock_guard<std::mutex> lg(valid_foreign_data_mutex);
+    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
     valid_foreign_data.erase(foreign_data);
   }
 
   bool Find(Foreign* foreign_data)
   {
-    std::lock_guard<std::mutex> lg(valid_foreign_data_mutex);
+    std::shared_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
     return valid_foreign_data.find(foreign_data) != valid_foreign_data.end();
-  }
-
-  static ForeignSet& Instance()
-  {
-    static ForeignSet foreign_set;
-    return foreign_set;
-  }
-
-  void ClearAll()
-  {
-    std::lock_guard<std::mutex> lg(valid_foreign_data_mutex);
-    for (auto i : valid_foreign_data)
-      delete i;
-
-    valid_foreign_data.clear();
   }
 
   ~ForeignSet()
   {
-    ForeignSet::Instance().ClearAll();
+    std::unique_lock<std::shared_timed_mutex> lock(valid_foreign_data_mutex);
+    for (auto i : valid_foreign_data) {
+      std::cout << "Destructing " << std::hex << i << std::endl;
+      delete i;
+    }
+
+    valid_foreign_data.clear();
+  }
+
+public:
+  static ForeignSet& Instance()
+  {
+    static ForeignSet foreign_set;
+    return foreign_set;
   }
 
   // Returns the Foreign object that has been wrapped in a kdb foreign
@@ -101,10 +94,17 @@ public:
 
     return foreign_data;
   }
+
+  // Creates the Foreign object and wraps it in a kdb
+  // foreign object
+  K KdbConstructor(std::shared_ptr<T> foreign_);
+
+  // KdbDestructor is registered as foreign object destructor callback
+  static K KdbDestructor(K foreign_);
 };
 
 template<typename T>
-K ForeignSet<T>::Foreign::KdbDestructor(K foreign_)
+K ForeignSet<T>::KdbDestructor(K foreign_)
 {
   KDB_EXCEPTION_TRY;
 
@@ -112,6 +112,7 @@ K ForeignSet<T>::Foreign::KdbDestructor(K foreign_)
 
   // Delete the Foreign object.  This will decrement the refcounts of the
   // shared pointers to allow them to be deleted. 
+  std::cout << "Destructing " << std::hex << foreign_data << std::endl;
   ForeignSet::Instance().Remove(foreign_data);
   delete foreign_data;
 
@@ -121,22 +122,17 @@ K ForeignSet<T>::Foreign::KdbDestructor(K foreign_)
 }
 
 template<typename T>
-K ForeignSet<T>::Foreign::KdbConstructor(std::shared_ptr<T> foreign_)
+K ForeignSet<T>::KdbConstructor(std::shared_ptr<T> foreign_)
 {
   // Use a raw new rather than a smart point since kdb will be controlling the
   // lifetime via its refcount
   auto* foreign_data = new Foreign(foreign_);
-  ForeignSet::Instance().Add(foreign_data);
-  K result = knk(2, Foreign::KdbDestructor, foreign_data);
+  std::cout << "Constructing " << std::hex << foreign_data << std::endl;
+  Add(foreign_data);
+  K result = knk(2, KdbDestructor, foreign_data);
   result->t = 112;
 
   return result;
-}
-
-template<typename T>
-std::shared_ptr<T> ForeignSet<T>::Foreign::GetForeign()
-{
-  return foreign;
 }
 
 template <typename T>
@@ -148,11 +144,11 @@ std::shared_ptr<T> GetForeign(K foreign)
 template <typename T>
 K MakeForeign(std::shared_ptr<T> foreign)
 {
-  return ForeignSet<T>::Foreign::KdbConstructor(foreign);
+  return ForeignSet<T>::Instance().KdbConstructor(foreign);
 }
 
 template <typename T>
 K MakeForeign(T foreign)
 {
-  return ForeignSet<T>::Foreign::KdbConstructor(std::make_shared<T>(foreign));
+  return ForeignSet<T>::Instance().KdbConstructor(std::make_shared<T>(foreign));
 }
