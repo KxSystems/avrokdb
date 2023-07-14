@@ -1,13 +1,18 @@
 #pragma once
 
+#include <map>
 #include "HelperFunctions.h"
 
-typedef signed char KdbType;
 
 // Map avro types and logical types to a kdb+ type
+typedef signed char KdbType;
 KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_type);
 KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical_type);
 KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union);
+
+// Infer union branch
+typedef std::map<std::pair<avro::Type, avro::LogicalType::Type>, size_t> UnionBranches;
+size_t InferUnionBranch(const UnionBranches& branches, K data);
 
 
 // Set of macros to assist with performing the type checks such the arguments

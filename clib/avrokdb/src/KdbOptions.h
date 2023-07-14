@@ -9,15 +9,22 @@
 #include "k.h"
 
 
+struct AvroOptions
+{
+  int64_t no_branch_selector = 0;
+};
+
 // Supported options
 namespace Options
 {
   // Int options
+  const std::string NO_UNION_BRANCH_SELECTOR = "NO_UNION_BRANCH_SELECTOR";
 
   // String options
   const std::string AVRO_FORMAT = "AVRO_FORMAT";
 
   const static std::set<std::string> int_options = {
+    NO_UNION_BRANCH_SELECTOR
   };
   const static std::set<std::string> string_options = {
     AVRO_FORMAT
