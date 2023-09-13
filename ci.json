@@ -1,5 +1,0 @@
-{
-  "release": {
-    "libraries":{ "names": [ "avrokdb" ], "registries" : ["gitlab"] }
-  }
-}

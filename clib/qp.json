@@ -1,7 +1,0 @@
-{
-	"default": {
-		"docker_base_image": ["rockylinux/rockylinux:8"],
-		"entry": [ "avrokdb.so" ]
-	}
-}
-
