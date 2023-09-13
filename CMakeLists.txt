@@ -26,18 +26,6 @@ message(STATUS "Generator : ${CMAKE_GENERATOR}")
 message(STATUS "Build Tool : ${CMAKE_BUILD_TOOL}")
 message(STATUS "Avro install : ${AVRO_INSTALL}")
 
-# When building protobuf from source using cmake it statically links against the MSVC runtime.
-# Since we are statically linking againat libprotobuf.lib, we must use the same runtime.
-if(MSVC)
-  foreach(flag_var
-      CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-    if(${flag_var} MATCHES "/MD")
-      string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-    endif(${flag_var} MATCHES "/MD")
-  endforeach()
-endif()
-
 include_directories (
 	"${AVRO_INSTALL}/include"
     ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include  # where avro-cpp has been installed using vcpkg
