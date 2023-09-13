@@ -22,18 +22,22 @@ if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
 elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
   # Create avrocpp installation directory
   mkdir -p cbuild/install
+  export AVRO_INSTALL=$(pwd)/cbuild/install
   brew install avro-cpp  
-  cp -r /usr/local/opt/avro-cpp/* cbuild/install
+  cp -r /usr/local/opt/avro-cpp/* $AVRO_INSTALL
+  cp -r /usr/local/opt/boost/* $AVRO_INSTALL
 elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
   # Create avrocpp installation directory
   mkdir -p cbuild/install
+  export AVRO_INSTALL=$(pwd)/cbuild/install
   cd cbuild
   # Build and install avrocpp using vcpkg
   git clone https://github.com/microsoft/vcpkg.git
   cd vcpkg
   ./bootstrap-vcpkg.bat
   ./vcpkg install avro-cpp:x64-windows
-  cp -r installed/x64-windows/* cbuild/install
+  cp -r installed/x64-windows/* $AVRO_INSTALL
+  cd ..
   cd ..
 else
   echo "$TRAVIS_OS_NAME is currently not supported"  

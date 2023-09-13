@@ -60,20 +60,37 @@ add_library (${MY_LIBRARY_NAME} SHARED ${SRC_FILES})
 IF(APPLE)
    set_target_properties(${MY_LIBRARY_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
    set_target_properties(${MY_LIBRARY_NAME} PROPERTIES SUFFIX .so)
+   set(OSFLAG m)
+elseif(WIN32)
+   set(OSFLAG w)
+else()
+   set(OSFLAG l)
 endif()
 
-if (NOT MSVC)  
-  set(STATIC_CPP "-static-libgcc -static-libstdc++")
-endif()
-
-target_link_libraries(${MY_LIBRARY_NAME} ${STATIC_CPP} ${AVRO_LIBRARY} ${LINK_LIBS})
+target_link_libraries(${MY_LIBRARY_NAME} ${AVRO_LIBRARY} ${LINK_LIBS})
 set_target_properties(${MY_LIBRARY_NAME} PROPERTIES PREFIX "")
 
-#include(GNUInstallDirs)
-if(WIN32)
-  install(TARGETS ${MY_LIBRARY_NAME}
-    RUNTIME DESTINATION ".")
-else()
-  install(TARGETS ${MY_LIBRARY_NAME}
-    LIBRARY DESTINATION ".")
-endif() 
+# Check if 32-bit/64-bit machine
+set(BITNESS 32)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(BITNESS 64)
+endif()
+
+# Convert QHOME env to valid cmake path
+file(TO_CMAKE_PATH $ENV{QHOME} QHOME_PATH)
+
+# Copy built shared object after build instead of during installation
+add_custom_command(TARGET ${MY_LIBRARY_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${MY_LIBRARY_NAME}>" ${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/lib/${MY_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    DEPENDS ${MY_LIBRARY_NAME}
+)
+
+# Minimum build/install move binary to $QHOME/<QARCH>
+install(TARGETS ${MY_LIBRARY_NAME} DESTINATION "${QHOME_PATH}/${OSFLAG}${BITNESS}/" CONFIGURATIONS MinSizeRel Release)
+install(DIRECTORY "q/" DESTINATION "${QHOME_PATH}" CONFIGURATIONS MinSizeRel Release FILES_MATCHING PATTERN "*.q")
+
+# Add the copied files to the install package
+file(COPY README.md LICENSE ${INSTALL_SCRIPT} DESTINATION ${PROJECT_BINARY_DIR}/${MY_LIBRARY_NAME}/)
+file(COPY examples/ DESTINATION ${PROJECT_BINARY_DIR}/${MY_LIBRARY_NAME}/examples/)
+file(COPY q/ DESTINATION ${PROJECT_BINARY_DIR}/${MY_LIBRARY_NAME}/q/)
