@@ -4,8 +4,8 @@ jobs:
     os: linux
   - dist: focal
     os: linux    
-#  - osx_image: xcode12.5
-#    os: osx
+  - osx_image: xcode12.5
+    os: osx
   - os: windows
 language: c
 compiler: gcc
@@ -19,11 +19,15 @@ before_install:
 
   # Run instructions to install or build Avro libray
   - if [[ $BUILD == "True" ]]; then
-      chmod +x travis_setup.sh; 
+      chmod +x travis_setup.sh;
       ./travis_setup.sh;
+      export LIB="cmake/$FILE_ROOT/lib";
+      mkdir cmake;
+    else
+      export LIB="";
     fi
     
-  # Set AVRO_INSTALL to the Arrow installation directory
+  # Set AVRO_INSTALL to the Avro installation directory
   - if [[ $BUILD == "True" ]]; then
       export AVRO_INSTALL=$TRAVIS_BUILD_DIR/cbuild/install;
       export LD_LIBRARY_PATH=$AVRO_INSTALL/lib:$LD_LIBRARY_PATH;

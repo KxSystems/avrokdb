@@ -2,7 +2,7 @@
 
 if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
   sudo apt update
-  sudo apt install -y libboost1.71-dev libboost-filesystem1.71-dev libboost-iostreams1.71-dev libboost-program-options1.71-dev libsnappy-dev
+  sudo apt install -y libboost-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev libsnappy-dev
   # Create avrocpp installation directory
   mkdir -p cbuild/install
   export AVRO_INSTALL=$(pwd)/cbuild/install
@@ -22,11 +22,11 @@ if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
 elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
   # Create avrocpp installation directory
   mkdir -p cbuild/install
-  export AVRO_INSTALL=$(pwd)/cbuild/install
+  brew install avro-cpp  
+  cp -r /usr/local/opt/avro-cpp/* cbuild/install
 elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-  # Create arrow installation directory
+  # Create avrocpp installation directory
   mkdir -p cbuild/install
-  export ARROW_INSTALL=$(pwd)/cbuild/install  
   cd cbuild
   # Build and install avrocpp using vcpkg
   git clone https://github.com/microsoft/vcpkg.git

@@ -103,10 +103,10 @@ The base dependencies required to build avrocpp for yum package managers are (ro
 
 The base dependencies required to build avrocpp for apt package managers are (ubuntu:20.04):
 
-* libboost1.71-dev
-* libboost-filesystem1.71-dev
-* libboost-iostreams1.71-dev
-* libboost-program-options1.71-dev
+* libboost-dev
+* libboost-filesystem-dev
+* libboost-iostreams-dev
+* libboost-program-options-dev
 * libsnappy-dev
 
 ### Note
