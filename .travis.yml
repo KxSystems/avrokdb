@@ -73,11 +73,7 @@ before_install:
       cmake --build . --config Release;
       cmake --build . --config Release --target install;
       cd ..;
-    elif [[ $BUILD == "True" && $TRAVIS_OS_NAME == "osx" ]]; then
-      export LDFLAGS="-L/usr/local/opt/boost/lib"
-      export CPPFLAGS="-I/usr/local/opt/boost/include"
-      cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=$AVRO_INSTALL && make install && cd .. ;
-    elif [[ $BUILD == "True" && $TRAVIS_OS_NAME == "linux" ) ]]; then
+    elif [[ $BUILD == "True" && ( $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ) ]]; then
       cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=$AVRO_INSTALL && make install && cd .. ;
     fi
 
