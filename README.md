@@ -1,181 +1,220 @@
-# Avrokdb
+# avrokdb
+
+![Avro](Apache_Avro_Logo.svg)
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/avrokdb?include_prereleases)](https://github.com/kxsystems/avrokdb/releases) [![Travis (.com) branch](https://travis-ci.com/KxSystems/avrokdb.svg?branch=main)](https://travis-ci.com/KxSystems/avrokdb)
+
 
 ## Introduction
 
-Avrokdb supports the use of [Apache Avro](https://avro.apache.org/docs/) from within kdb+.  Encoding converts a kdb+ object to Avro serialised using the specified Avro schema, decoding converts Avro serialised to a kdb+ object object using the specified Avro schema.  It support all the Avro datatypes:
+This interface allows kdb+ to users encode and decode Apache Avro serialized data.
 
-- array
-- bool
-- bytes
-- double
-- enum
-- fixed
-- float
-- int
-- long
-- map
-- null
-- string
-- union
-
-and all the Avro logical types:
-
-* date
-* decimal
-* duration
-* time-millis
-* time-micros
-* timestamp-millis
-* timestamp-micros
-* uuid
-
-Full details of the type-mapping between Avro and kdb+ are described [here](./docs/type-mapping.md).
+This is part of the [*Fusion for kdb+*](http://code.kx.com/q/interfaces/fusion/) interface collection.
 
 
 
-## Functionality
+## New to kdb+ ?
 
-Avrokdb allows you to:
-
-* Compile Avro JSON schemas
-* Encode a kdb+ object to Avro serialised data in either binary or JSON format
-* Decode Avro serialised data in either binary or JSON format to a kdb+ object
-
-See [avrodb.q](./q/avrokdb.q) for a full function reference.
+Kdb+ is the world's fastest time-series database, optimized for  ingesting, analyzing and storing massive amounts of structured data. To  get started with kdb+, please visit https://code.kx.com/q/ for downloads and developer information. For general information, visit https://kx.com/
 
 
 
-## Avro schemas
+## New to Apache Avro?
 
-Avro data is not self describing, it requires a schema to be defined and used during both the encoding and decoding process.  Details of how to define an Avro JSON schema can be found [here](https://avro.apache.org/docs/1.11.1/specification/). 
+Apache Avro is a data serialization system.
 
+Avro provides:
 
+- Rich data structures.
+- A compact, fast, binary data format.
 
-## Qpacker build
-
-Clone the `avrokdb` repo then run:
-
-```bash
-qp build
-```
-
-This creates two qpacker targets:
-
-```bash
-qp run avrokdb // to run standalone
-qp run tests   // to run the tests suite
-```
+Avro relies on schemas which are defined with JSON. When Avro data is read, the schema used when  writing it is always present. This permits each datum to be written with no per-value overheads, making serialization both fast and small. This  also facilitates use with dynamic, scripting languages, since data,  together with its schema, is fully self-describing.
 
 
 
-## Qpacker install
+## Installation
 
-A user can pick up the `avrokdb.qpk` file and add it as a dependency in the application:
+### Requirements
 
-```json
-{
-  "default": {
-    "entry": ["myapp.q"],
-    "depends": ["avrokdb"]
-  }
-}
-```
+- kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
+- Apache Avro C++ libraries
+- C++11 or later and 
+- CMake ≥ 3.1.3
 
-You can get a pre-built `avrokdb.qpk` from the [packages page](https://gitlab.com/kxdev/interop/avrokdb/-/packages), or using q-packer:
+### Third-party library installation
 
-```bash
-qp pull gitlab.com/kxdev/interop/avrokdb/avrokdb 0.0.6
-```
+`avrokdb` depends on the [Avro C++ library](https://avro.apache.org/docs/1.11.1/api/cpp/html/).
 
+#### Linux
 
+On linux `avrocpp` should be built from source.
 
-## Building from source (linux)
+1. Install the `avrocpp` dependencies (boost and compression libraries).  
 
-The [Dockerfile.qp](./clib/Dockerfile.qp) describes how to build `avrokdb.so` from source, including the dependencies (such as avrocpp and boost).
+   With an `apt` package manager:
 
-The base dependencies required to build avrocpp for yum package managers are (rockylinux:8):
+   ```bash
+   sudo apt -y update
+   sudo apt -y install libboost-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev libsnappy-dev
+   ```
 
-* boost-devel.x86_64
-* boost-filesystem.x86_64
-* boost-iostreams.x86_64
-* boost-program-options.x86_64
-* snappy-devel.x86_64
+   With a `yum` package manager:
 
-The base dependencies required to build avrocpp for apt package managers are (ubuntu:20.04):
+   ```bash
+   sudo yum -y update
+   sudo yum -y install boost-devel boost-filesystem boost-iostreams boost-program-options snappy-devel
+   ```
 
-* libboost-dev
-* libboost-filesystem-dev
-* libboost-iostreams-dev
-* libboost-program-options-dev
-* libsnappy-dev
+2. Clone the avro repo and switch to the `release-1.11.2` tag (which is the one used to build the `avrokdb` linux package)
 
-### Note
+   ```bash
+   git clone https://github.com/apache/avro.git
+   cd avro
+   git checkout refs/tags/release-1.11.2 --
+   ```
 
-To avoid nasty C++ ABI problems (inevitably resulting in an unexplained coredump) you must set the `CMAKE_CXX_STANDARD` when building avrokdb to the same as was used to build the Boost libraries, e.g.:
+3. Create cmake build and install directories:
 
-- On rockylinux:8, yum installs boost built with C++11
-- On ubuntu:20.04, apt installs boost built with C++17
+   ```bash
+   cd lang/c++
+   mkdir build
+   mkdir install
+   export AVRO_INSTALL=$(pwd)/install
+   cd build
+   ```
 
+4. Generate the cmake build scripts:
 
+   ```bash
+   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_INSTALL_PREFIX=$AVRO_INSTALL ..
+   ```
 
-## Building from source (Windows)
+5. Build and install to `$AVRO_INSTALL`:
 
-It is also possible to build avrokdb in Windows using [vcpkg](https://vcpkg.io/en/).
+   ```bash
+     cmake --build . --config Release
+     cmake --build . --config Release --target install
+   ```
 
-Download the vcpkg repo and run `bootstrap-vcpkg.bat` (full instructions are [here](https://github.com/microsoft/vcpkg)).
+6. Copy the shared object to `$QHOME/l64`:
+
+   ```bash
+   cp $AVRO_INSTALL/lib/libavrocpp.so $QHOME/l64
+   ```
+
+#### macOS
+
+On macOS `avrocpp` can be installed using `brew`:
 
 ```bash
-C:\Git> git clone https://github.com/microsoft/vcpkg.git
-C:\Git> cd vcpkg
-C:\Git\vcpkg> bootstrap-vcpkg.bat
+brew install avro-cpp
 ```
 
-Then install avrocpp and its dependencies:
+#### Windows
+
+On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
+
+1. Clone the `vcpkg` repo and bootstrap it:
+
+   ```bash
+   git clone https://github.com/microsoft/vcpkg.git
+   cd vcpkg
+   bootstrap-vcpkg.bat
+   ```
+
+2. Install `avrocpp`:
+
+   ```bash
+   vcpkg install avro-cpp:x64-windows
+   set AVRO_INSTALL=%cd%\installed\x64-windows
+   ```
+
+3. Copy the DLLs to `$QHOME\w64`:
+
+   ```bash
+   cd installed\x64-windows\bin
+   copy avrocpp.dll %QHOME%\w64
+   copy boost_iostreams-vc143-mt-x64-*.dll %QHOME%\w64
+   copy liblzma.dll %QHOME%\w64
+   copy zstd.dll %QHOME%\w64
+   copy bz2.dll %QHOME%\w64
+   copy zlib1.dll %QHOME%\w64
+   ```
+
+   
+
+### Installing a release
+
+It is recommended that a user install this interface through a release. This is completed in a number of steps:
+
+1. Ensure you have downloaded/installed the Avro C++ libraries following the [instructions](#third-party-library-installation).
+2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture.
+3. Install script `avrokdb.q` to `$QHOME`, and binary file `lib/arrowkdb.(so|dll)` to `$QHOME/[mlw](64)`, by executing the following from the unzipped Release package directory:
 
 ```bash
-C:\Git\vcpkg> vcpkg install avro-cpp:x64-windows
+## Linux/macOS
+chmod +x install.sh && ./install.sh
+
+## Windows
+install.bat
 ```
 
-Then build avrokdb, point `$AVRO_INSTALL` to the the vcpkg directory containing the avrocpp package:
+
+
+### Building and installing from source
+
+In order to successfully build and install this interface from source, the following environment variables must be set:
+
+1. `AVRO_INSTALL` = Location of the Avro C++ API release (only required if `avrocpp` is not installed globally on the system, e.g. on Linux or Windows where `avrocpp` was built from source)
+2. `QHOME` = Q installation directory (directory containing `q.k`)
+
+From a shell prompt (on Linux/macOS) or Visual Studio command prompt (on Windows), clone the `avrokdb` source from github:
 
 ```bash
-C:\Git\avrokdb\clib\avrokdb> mkdir build
-C:\Git\avrokdb\clib\avrokdb> cd build
-C:\Git\avrokdb\clib\avrokdb\build> cmake .. -DAVRO_INSTALL="C:/Git/vcpkg/packages/avro-cpp_x64-windows"
-C:\Git\avrokdb\clib\avrokdb\build> cmake --build . --config Release
+git clone https://github.com/KxSystems/avrokdb.git
+cd avrokdb
 ```
 
-The `Release` directory will contain `avrokdb.dll` and all its dependencies which need to be made available to q (e.g. in `$QHOME/w64`):
+Create the cmake build directory and generate the build files (this will use the system's default cmake generator):
 
 ```bash
-C:\Git\avrokdb\clib\avrokdb\build>cd Release
+mkdir build
+cd build
 
-C:\Git\avrokdb\clib\avrokdb\build\Release>dir
- Volume in drive C is Windows
- Volume Serial Number is 2241-3CD0
+## Linux (using the Arrow installation which was build from source as above)
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=$AVRO_INSTALL
 
- Directory of C:\Git\avrokdb\clib\avrokdb\build\Release
+## macOS
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11
 
-05/07/2023  16:55    <DIR>          .
-05/07/2023  16:55    <DIR>          ..
-15/06/2023  11:02           781,824 avrocpp.dll
-05/07/2023  16:55           361,984 avrokdb.dll
-05/07/2023  16:55             1,266 avrokdb.exp
-05/07/2023  16:55             2,630 avrokdb.lib
-15/06/2023  11:01            78,848 boost_iostreams-vc143-mt-x64-1_81.dll
-06/04/2023  14:30            75,264 bz2.dll
-14/06/2023  17:20           183,808 liblzma.dll
-06/04/2023  14:37            89,600 zlib1.dll
-06/04/2023  14:38           637,440 zstd.dll
-               9 File(s)      2,212,664 bytes
-               2 Dir(s)  82,162,450,432 bytes free
+## Windows (using the Arrow installation which was build from source as above)
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=%AVRO_INSTALL%
+```
+
+Start the build:
+
+```bash
+cmake --build . --config Release
+```
+
+Create the install package and deploy to `$QHOME`:
+
+```bash
+cmake --build . --config Release --target install
 ```
 
 
 
-## Examples
+## Documentation
 
-See [example.q](./examples/example.q) for a basic example.
+Documentation outlining the functionality available for this interface can be found in the [`docs`](docs/index.md) folder.
 
-More detailed examples of all the Avro datatypes and logical types can be found in the [tests](./tests/) directory.
 
+
+## Status
+
+The avrokdb interface is provided here under an Apache 2.0 license.
+
+If you find issues with the interface or have feature requests, please consider [raising an issue](https://github.com/KxSystems/avrokdb/issues).
+
+If you wish to contribute to this project, please follow the [contribution guide](CONTRIBUTING.md).
