@@ -8,7 +8,7 @@ Note that Avro data is not self describing, it requires a schema to be defined a
 
 ## Record datatype
 
-An Avro record contains [a set of field where each field has its own datatype](https://avro.apache.org/docs/1.11.1/specification/#schema-record).
+An Avro record contains [a set of fields where each field has its own datatype](https://avro.apache.org/docs/1.11.1/specification/#schema-record).
 
 The kdb+ representation of a record is a 99h where the dictionary keys are a 11h and the dictionary values are a 0h.  Each item is the dictionary values mixed list has the kdb+ type corresponding to that field's datatype.
 

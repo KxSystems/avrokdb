@@ -6,7 +6,7 @@ singleTest:{[schema_file; input; options]
     output:.avrokdb.decode[sc;serialised;options];
     show output;
     -1 "<----- Result ----->";
-    show input~output;
+    input~output;
     }
 
 runTests:{[options]
