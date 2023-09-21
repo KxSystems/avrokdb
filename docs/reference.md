@@ -181,7 +181,7 @@ q)-1 .avrokdb.encode[schema;input;(enlist `AVRO_FORMAT)!enlist `JSON_PRETTY];
 where:
 
 * `schema` is a foreign object containing a compiled Avro schema.
-* `input` is 4h or 10h list of Avro serialised data.  Must adhere to the appropriate [type mapping](./type-mapping.md) for the schema.
+* `input` is 4h or 10h list of Avro serialised data.
 * `options` is a kdb+ dictionary of options or generic null (::) to use the defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h or mixed list of -7|-11|4h.
 
 The function returns a kdb+ object representing the Avro data having applied the appropriate [type mappings](./type-mapping.md) for the schema

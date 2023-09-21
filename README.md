@@ -207,7 +207,7 @@ cmake --build . --config Release --target install
 
 ## Documentation
 
-Documentation outlining the functionality available for this interface can be found in the [`docs`](docs/index.md) folder.
+Documentation outlining the functionality available for this interface can be found in the [`docs`](docs/introduction.md) folder.
 
 
 

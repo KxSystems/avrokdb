@@ -42,11 +42,5 @@ In order to have your pull request approved in a timely manner, please provide c
 
 ### Additional Resources
 
-[Language Guide (proto3)](https://developers.google.com/protocol-buffers/docs/proto3)
-
-[Protocol Buffer Basics: C++](https://developers.google.com/protocol-buffers/docs/cpptutorial)
-
-[Protocol Buffers C++ Reference](https://developers.google.com/protocol-buffers/docs/reference/cpp)
-
 [KDB+ and q documentation](https://code.kx.com/q/)
 
