@@ -28,11 +28,35 @@ Avro provides:
 - Rich data structures.
 - A compact, fast, binary data format.
 
-Avro relies on schemas which are defined with JSON. When Avro data is read, the schema used when  writing it is always present. This permits each datum to be written with no per-value overheads, making serialization both fast and small. This  also facilitates use with dynamic, scripting languages, since data,  together with its schema, is fully self-describing.
+Avro relies on schemas which are defined with JSON. When Avro data is read, the schema used when writing has to be provided. This permits each datum to be written with no per-value overheads, making serialization both fast and small.
 
 
 
 ## Installation
+
+### Requirements
+
+- kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
+
+### Installing a release
+
+It is recommended that a user install this interface using a release package. This is completed in a number of steps:
+
+1. If running on Windows, ensure you have downloaded/installed the Avro C++ libraries following the instructions [here](#windows).  This step is not necessary on Linux or macOS because their `avrokdb` release packages are statically linked with `libavrocpp`.
+2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture.
+3. Install script `avrokdb.q` to `$QHOME`, and binary file `lib/arrowkdb.(so|dll)` to `$QHOME/[mlw](64)`, by executing the following from the unzipped release package directory:
+
+```bash
+## Linux/macOS
+chmod +x install.sh && ./install.sh
+
+## Windows
+install.bat
+```
+
+
+
+## Building and installing from source
 
 ### Requirements
 
@@ -42,8 +66,6 @@ Avro relies on schemas which are defined with JSON. When Avro data is read, the 
 - CMake ≥ 3.1.3
 
 ### Third-party library installation
-
-`avrokdb` depends on the [Avro C++ library](https://avro.apache.org/docs/1.11.1/api/cpp/html/).
 
 #### Linux
 
@@ -141,27 +163,8 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
    copy zlib1.dll %QHOME%\w64
    ```
 
-   
 
-### Installing a release
-
-It is recommended that a user install this interface through a release. This is completed in a number of steps:
-
-1. Ensure you have downloaded/installed the Avro C++ libraries following the [instructions](#third-party-library-installation).
-2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture.
-3. Install script `avrokdb.q` to `$QHOME`, and binary file `lib/arrowkdb.(so|dll)` to `$QHOME/[mlw](64)`, by executing the following from the unzipped Release package directory:
-
-```bash
-## Linux/macOS
-chmod +x install.sh && ./install.sh
-
-## Windows
-install.bat
-```
-
-
-
-### Building and installing from source
+### Building avrokdb
 
 In order to successfully build and install this interface from source, the following environment variables must be set:
 
