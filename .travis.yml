@@ -1,6 +1,6 @@
 jobs:
   include:
-  - dist: bionic
+  - dist: trusty
     os: linux
   - dist: xenial
     os: linux    
@@ -10,7 +10,7 @@ jobs:
 language: c
 compiler: gcc
 os: linux
-dist: xenial
+dist: trusty
 
 before_install:
   - export FILE_ROOT="avrokdb"
@@ -97,6 +97,6 @@ deploy:
   file: "$FILE_NAME"
   on:
     tags: true
-    condition: $TRAVIS_OS_NAME = windows || $TRAVIS_OS_NAME = osx || ($TRAVIS_DIST = xenial && $TRAVIS_OS_NAME = linux) 
+    condition: $TRAVIS_OS_NAME = windows || $TRAVIS_OS_NAME = osx || ($TRAVIS_DIST = trusty && $TRAVIS_OS_NAME = linux) 
   skip_cleanup: 'true'
   
