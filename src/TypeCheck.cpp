@@ -64,7 +64,7 @@ KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_type)
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
-    throw TypeCheck("GetKdbArrayType - unsupported type: " + type);
+    throw TypeCheck("GetKdbArrayType - unsupported type: " + std::to_string(type));
   }
 }
 
@@ -127,7 +127,7 @@ KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical_type)
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
   default:
-    throw TypeCheck("GetKdbSimpleType - unsupported type: " + type);
+    throw TypeCheck("GetKdbSimpleType - unsupported type: " + std::to_string(type));
   }
 }
 
@@ -146,7 +146,7 @@ KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union)
   switch (avro_type) {
   case avro::AVRO_SYMBOLIC:
   case avro::AVRO_UNKNOWN:
-    throw TypeCheck("GetKdbType - unsupported type: " + avro_type);
+    throw TypeCheck("GetKdbType - unsupported type: " + std::to_string(avro_type));
   case avro::AVRO_ARRAY:
   {
     const auto& avro_array = datum.value<avro::GenericArray>();
