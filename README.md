@@ -126,7 +126,7 @@ On linux `avrocpp` should be built from source.
 
 #### macOS
 
-On macOS `avrocpp` (and its dependancy on `boost`) can be installed using `brew`:
+On macOS `avrocpp` (and its dependency on `boost`) can be installed using `brew`:
 
 ```bash
 brew install avro-cpp boost
@@ -140,8 +140,8 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
 
    ```bash
    git clone https://github.com/microsoft/vcpkg.git
-   git checkout refs/tags/2023.07.21 --
    cd vcpkg
+   git checkout refs/tags/2023.08.09 --
    bootstrap-vcpkg.bat
    ```
 
