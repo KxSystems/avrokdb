@@ -33,8 +33,8 @@ elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
   cd cbuild
   # Build and install avrocpp using vcpkg
   git clone https://github.com/microsoft/vcpkg.git
-  git checkout refs/tags/2023.07.21 --
   cd vcpkg
+  git checkout refs/tags/2023.07.21 --
   ./bootstrap-vcpkg.bat
   ./vcpkg install avro-cpp:x64-windows
   cp -r installed/x64-windows/* $AVRO_INSTALL

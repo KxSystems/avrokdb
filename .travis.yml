@@ -20,7 +20,7 @@ before_install:
   # Run instructions to install or build Avro libray
   - if [[ $BUILD == "True" ]]; then
       chmod +x travis_setup.sh;
-      travis_wait ./travis_setup.sh;
+      ./travis_setup.sh;
       export LIB="cmake/$FILE_ROOT/lib";
       mkdir cmake;
     else
