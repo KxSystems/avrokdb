@@ -37,8 +37,8 @@ private:
   std::map<std::string, std::string> string_options;
   std::map<std::string, int64_t> int_options;
 
-  const std::set<std::string>& supported_string_options;
-  const std::set<std::string>& supported_int_options;
+  const std::set<std::string> supported_string_options;
+  const std::set<std::string> supported_int_options;
 
 private:
   const std::string ToUpper(std::string str) const
@@ -115,7 +115,7 @@ public:
     {};
   };
 
-  KdbOptions(K options, const std::set<std::string> supported_string_options_, const std::set<std::string> supported_int_options_) :
+  KdbOptions(K options, const std::set<std::string>& supported_string_options_, const std::set<std::string>& supported_int_options_) :
     supported_string_options(supported_string_options_), supported_int_options(supported_int_options_)
   {
     if (options != NULL && options->t != 101) {
