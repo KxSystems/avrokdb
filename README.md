@@ -126,10 +126,10 @@ On linux `avrocpp` should be built from source.
 
 #### macOS
 
-On macOS `avrocpp` can be installed using `brew`:
+On macOS `avrocpp` (and its dependency on `boost`) can be installed using `brew`:
 
 ```bash
-brew install avro-cpp
+brew install avro-cpp boost
 ```
 
 #### Windows
@@ -141,6 +141,7 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
    ```bash
    git clone https://github.com/microsoft/vcpkg.git
    cd vcpkg
+   git checkout refs/tags/2023.08.09 --
    bootstrap-vcpkg.bat
    ```
 
@@ -169,7 +170,8 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
 In order to successfully build and install this interface from source, the following environment variables must be set:
 
 1. `AVRO_INSTALL` = Location of the Avro C++ API release (only required if `avrocpp` is not installed globally on the system, e.g. on Linux or Windows where `avrocpp` was built from source)
-2. `QHOME` = Q installation directory (directory containing `q.k`)
+2. `BOOST_INSTALL` = Locaion of the Boost C++ library (only required if `boost` is not installed globally on the system)
+3. `QHOME` = Q installation directory (directory containing `q.k`)
 
 From a shell prompt (on Linux/macOS) or Visual Studio command prompt (on Windows), clone the `avrokdb` source from github:
 

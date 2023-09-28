@@ -18,9 +18,11 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX)
 message(STATUS "Generator : ${CMAKE_GENERATOR}")
 message(STATUS "Build Tool : ${CMAKE_BUILD_TOOL}")
 message(STATUS "Avro install : ${AVRO_INSTALL}")
+message(STATUS "Boost install : ${BOOST_INSTALL}")
 
 include_directories (
 	"${AVRO_INSTALL}/include"
+    "${BOOST_INSTALL}/include"
     ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include  # where avro-cpp has been installed using vcpkg
     ${CMAKE_BINARY_DIR} # For 'k.h', downloaded below
 )
