@@ -37,7 +37,7 @@ elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
   git checkout refs/tags/2023.08.09 -- 
   ./bootstrap-vcpkg.bat
   ./vcpkg install boost-iostreams:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows snappy:x64-windows
-  travis_wait ./vcpkg install avro-cpp:x64-windows
+  ./vcpkg install avro-cpp:x64-windows
   cp -r installed/x64-windows/* $AVRO_INSTALL
   cd ..
   cd ..
