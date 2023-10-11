@@ -584,7 +584,9 @@ K Decode(K schema, K data, K options)
   reader.read(datum);
   reader.drain();
 
-  return DecodeDatum("", datum, false);
+  K result = DecodeDatum("", datum, false);
+
+  return result;
 
   KDB_EXCEPTION_CATCH;
 }
