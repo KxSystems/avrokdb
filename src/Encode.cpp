@@ -178,7 +178,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   case avro::AVRO_BOOL:
   {
     for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum((bool)kG(data)[i]));
+      array_data.emplace_back(std::move(avro::GenericDatum((bool)kG(data)[i])));
     break;
   }
   case avro::AVRO_BYTES:
@@ -187,7 +187,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       for (auto i = 0; i < data->n; ++i) {
         K k_bytes = kK(data)[i];
         TYPE_CHECK_ARRAY(field, avro::toString(array_type), 0, k_bytes->t);
-        array_data.push_back(avro::GenericDatum(DecimalToBytes(field, array_type, array_logical_type, k_bytes)));
+        array_data.emplace_back(std::move(avro::GenericDatum(DecimalToBytes(field, array_type, array_logical_type, k_bytes))));
       }
     } else {
       for (auto i = 0; i < data->n; ++i) {
@@ -195,7 +195,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
         TYPE_CHECK_ARRAY(field, avro::toString(array_type), KG, k_bytes->t);
         std::vector<uint8_t> bytes(k_bytes->n);
         std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
-        array_data.push_back(avro::GenericDatum(bytes));
+        array_data.emplace_back(std::move(avro::GenericDatum(bytes)));
       }
     }
     break;
@@ -203,13 +203,13 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   case avro::AVRO_DOUBLE:
   {
     for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum(kF(data)[i]));
+      array_data.emplace_back(std::move(avro::GenericDatum(kF(data)[i])));
     break;
   }
   case avro::AVRO_ENUM:
   {
     for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum(array_schema, avro::GenericEnum(array_schema, kS(data)[i])));
+      array_data.emplace_back(std::move(avro::GenericDatum(array_schema, avro::GenericEnum(array_schema, kS(data)[i]))));
     break;
   }
   case avro::AVRO_FIXED:
@@ -218,13 +218,13 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
       for (auto i = 0; i < data->n; ++i) {
         K k_bytes = kK(data)[i];
         TYPE_CHECK_ARRAY(field, avro::toString(array_type), 0, k_bytes->t);
-        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DecimalToBytes(field, array_type, array_logical_type, k_bytes))));
+        array_data.emplace_back(std::move(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DecimalToBytes(field, array_type, array_logical_type, k_bytes)))));
       }
     } else if (array_logical_type.type() == avro::LogicalType::DURATION) {
       for (auto i = 0; i < data->n; ++i) {
         K k_bytes = kK(data)[i];
         TYPE_CHECK_ARRAY(field, avro::toString(array_type), KI, k_bytes->t);
-        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DurationToBytes(field, array_type, k_bytes))));
+        array_data.emplace_back(std::move(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, DurationToBytes(field, array_type, k_bytes)))));
       }
     } else {
       for (auto i = 0; i < data->n; ++i) {
@@ -235,7 +235,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
         std::vector<uint8_t> fixed;
         fixed.resize(k_bytes->n);
         std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
-        array_data.push_back(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, fixed)));
+        array_data.emplace_back(std::move(avro::GenericDatum(array_schema, avro::GenericFixed(array_schema, fixed))));
       }
     }
     break;
@@ -243,7 +243,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
   case avro::AVRO_FLOAT:
   {
     for (auto i = 0; i < data->n; ++i)
-      array_data.push_back(avro::GenericDatum(kE(data)[i]));
+      array_data.emplace_back(std::move(avro::GenericDatum(kE(data)[i])));
     break;
   }
   case avro::AVRO_INT:
@@ -251,10 +251,10 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     if (array_logical_type.type() == avro::LogicalType::DATE || array_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
       TemporalConversion tc(field, array_logical_type.type());
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum(tc.KdbToAvro(kI(data)[i])));
+        array_data.emplace_back(std::move(avro::GenericDatum(tc.KdbToAvro(kI(data)[i]))));
     } else {
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum(kI(data)[i]));
+        array_data.emplace_back(std::move(avro::GenericDatum(kI(data)[i])));
     }
     break;
   }
@@ -263,10 +263,10 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     if (array_logical_type.type() == avro::LogicalType::TIME_MICROS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
        TemporalConversion tc(field, array_logical_type.type());
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(data)[i])));
+        array_data.emplace_back(std::move(avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(data)[i]))));
     } else {
       for (auto i = 0; i < data->n; ++i)
-        array_data.push_back(avro::GenericDatum((int64_t)kJ(data)[i]));
+        array_data.emplace_back(std::move(avro::GenericDatum((int64_t)kJ(data)[i])));
     }
     break;
   }
@@ -275,7 +275,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     for (auto i = 0; i < data->n; ++i) {
       K k_value = kK(data)[i];
       TYPE_CHECK_ARRAY(field, avro::toString(array_type), 101, k_value->t);
-      array_data.push_back(avro::GenericDatum());
+      array_data.emplace_back(std::move(avro::GenericDatum()));
     }
     break;
   }
@@ -284,13 +284,13 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
     if (array_logical_type.type() == avro::LogicalType::UUID) {
       for (auto i = 0; i < data->n; ++i) {
         U k_uuid = kU(data)[i];
-        array_data.push_back(avro::GenericDatum(GuidToString(k_uuid)));
+        array_data.emplace_back(std::move(avro::GenericDatum(GuidToString(k_uuid))));
       }
     } else {
       for (auto i = 0; i < data->n; ++i) {
         K k_string = kK(data)[i];
         TYPE_CHECK_ARRAY(field, avro::toString(array_type), KC, k_string->t);
-        array_data.push_back(avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)));
+        array_data.emplace_back(std::move(avro::GenericDatum(std::string((char*)kG(k_string), k_string->n))));
       }
     }
     break;
@@ -307,7 +307,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
 
       auto array_datum = avro::GenericArray(sub_array);
       EncodeArray(field, array_datum, k_array);
-      array_data.push_back(avro::GenericDatum(sub_array, array_datum));
+      array_data.emplace_back(std::move(avro::GenericDatum(sub_array, array_datum)));
     }
     break;
   }
@@ -321,7 +321,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
 
       auto record_datum = avro::GenericRecord(array_schema);
       EncodeRecord(field,  record_datum, k_record);
-      array_data.push_back(avro::GenericDatum(array_schema, record_datum));
+      array_data.emplace_back(std::move(avro::GenericDatum(array_schema, record_datum)));
     }
     break;
   }
@@ -333,7 +333,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
 
       auto union_datum = avro::GenericDatum(array_schema);
       EncodeUnion(field, union_datum, k_union);
-      array_data.push_back(union_datum);
+      array_data.emplace_back(std::move(union_datum));
     }
     break;
   }
@@ -347,7 +347,7 @@ void EncodeArray(const std::string& field, avro::GenericArray& avro_array, K dat
 
       auto map_datum = avro::GenericMap(array_schema);
       EncodeMap(field, map_datum, k_map);
-      array_data.push_back(avro::GenericDatum(array_schema, map_datum));
+      array_data.emplace_back(std::move(avro::GenericDatum(array_schema, map_datum)));
     }
     break;
   }
@@ -395,7 +395,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   case avro::AVRO_BOOL:
   {
     for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum((bool)kG(values)[i]) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum((bool)kG(values)[i]))));
     break;
   }
   case avro::AVRO_BYTES:
@@ -404,7 +404,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       for (auto i = 0; i < values->n; ++i) {
         K k_bytes = kK(values)[i];
         TYPE_CHECK_MAP(field, avro::toString(map_type), 0, k_bytes->t);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(DecimalToBytes(field, map_type, map_logical_type, k_bytes)) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(DecimalToBytes(field, map_type, map_logical_type, k_bytes)))));
       }
     } else {
       for (auto i = 0; i < values->n; ++i) {
@@ -412,7 +412,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
         TYPE_CHECK_MAP(field, avro::toString(map_type), KG, k_bytes->t);
         std::vector<uint8_t> bytes(k_bytes->n);
         std::memcpy(bytes.data(), kG(k_bytes), k_bytes->n);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(bytes) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(bytes))));
       }
     }
     break;
@@ -420,13 +420,13 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   case avro::AVRO_DOUBLE:
   {
     for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(kF(values)[i]) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(kF(values)[i]))));
     break;
   }
   case avro::AVRO_ENUM:
   {
     for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericEnum(map_schema, kS(values)[i])) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericEnum(map_schema, kS(values)[i])))));
     break;
   }
   case avro::AVRO_FIXED:
@@ -435,13 +435,13 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
       for (auto i = 0; i < values->n; ++i) {
         K k_bytes = kK(values)[i];
         TYPE_CHECK_MAP(field, avro::toString(map_type), 0, k_bytes->t);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DecimalToBytes(field, map_type, map_logical_type, k_bytes))) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DecimalToBytes(field, map_type, map_logical_type, k_bytes))))));
       }
     } else if (map_logical_type.type() == avro::LogicalType::DURATION) {
       for (auto i = 0; i < values->n; ++i) {
         K k_bytes = kK(values)[i];
         TYPE_CHECK_MAP(field, avro::toString(map_type), KI, k_bytes->t);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DurationToBytes(field, map_type, k_bytes))) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, DurationToBytes(field, map_type, k_bytes))))));
       }
     } else {
       for (auto i = 0; i < values->n; ++i) {
@@ -452,7 +452,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
         std::vector<uint8_t> fixed;
         fixed.resize(k_bytes->n);
         std::memcpy(fixed.data(), kG(k_bytes), k_bytes->n);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, fixed)) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, avro::GenericFixed(map_schema, fixed)))));
       }
     }
     break;
@@ -460,7 +460,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
   case avro::AVRO_FLOAT:
   {
     for (auto i = 0; i < values->n; ++i)
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(kE(values)[i]) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(kE(values)[i]))));
     break;
   }
   case avro::AVRO_INT:
@@ -468,10 +468,10 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     if (map_logical_type.type() == avro::LogicalType::DATE || map_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
       TemporalConversion tc(field, map_logical_type.type());
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro(kI(values)[i])) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(tc.KdbToAvro(kI(values)[i])))));
     } else {
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(kI(values)[i]) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(kI(values)[i]))));
     }
     break;
   }
@@ -480,10 +480,10 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     if (map_logical_type.type() == avro::LogicalType::TIME_MICROS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
       TemporalConversion tc(field, map_logical_type.type());
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(values)[i])) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(tc.KdbToAvro<int64_t>(kJ(values)[i])))));
     } else {
       for (auto i = 0; i < values->n; ++i)
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum((int64_t)kJ(values)[i]) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum((int64_t)kJ(values)[i]))));
     }
     break;
   }
@@ -492,7 +492,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     for (auto i = 0; i < values->n; ++i) {
       K k_value = kK(values)[i];
       TYPE_CHECK_MAP(field, avro::toString(map_type), 101, k_value->t);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum() });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum())));
     }
     break;
   }
@@ -501,13 +501,13 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
     if (map_logical_type.type() == avro::LogicalType::UUID) {
       for (auto i = 0; i < values->n; ++i) {
         U k_uuid = kU(values)[i];
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(GuidToString(k_uuid)) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(GuidToString(k_uuid)))));
       }
     } else {
       for (auto i = 0; i < values->n; ++i) {
         K k_string = kK(values)[i];
         TYPE_CHECK_ARRAY(field, avro::toString(map_type), KC, k_string->t);
-        map_data.push_back({ kS(keys)[i], avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)) });
+        map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(std::string((char*)kG(k_string), k_string->n)))));
       }
     }
     break;
@@ -524,7 +524,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 
       auto array_datum = avro::GenericArray(sub_array);
       EncodeArray(field, array_datum, k_array);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(sub_array, array_datum) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(sub_array, array_datum))));
     }
     break;
   }
@@ -538,7 +538,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 
       auto record_datum = avro::GenericRecord(map_schema);
       EncodeRecord(field, record_datum, k_record);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, record_datum) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, record_datum))));
     }
     break;
   }
@@ -550,7 +550,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 
       auto union_datum = avro::GenericDatum(map_schema);
       EncodeUnion(field, union_datum, k_union);
-      map_data.push_back({ kS(keys)[i], union_datum });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], union_datum)));
     }
     break;
   }
@@ -564,7 +564,7 @@ void EncodeMap(const std::string& field, avro::GenericMap& avro_map, K data)
 
       auto map_datum = avro::GenericMap(map_schema);
       EncodeMap(field, map_datum, k_map);
-      map_data.push_back({ kS(keys)[i], avro::GenericDatum(map_schema, map_datum) });
+      map_data.emplace_back(std::move(std::pair<std::string, avro::GenericDatum>(kS(keys)[i], avro::GenericDatum(map_schema, map_datum))));
     }
     break;
   }
@@ -594,6 +594,61 @@ void EncodeUnion(const std::string& field, avro::GenericDatum& avro_union, K dat
   EncodeDatum(field, avro_union, k_datum, true);
 }
 
+class KdbMemoryOutputStream : public avro::OutputStream {
+public:
+  const size_t chunkSize_;
+  std::vector<uint8_t*> data_;
+  size_t available_;
+  size_t byteCount_;
+
+  explicit KdbMemoryOutputStream(size_t chunkSize = 4 * 1024) : chunkSize_(chunkSize),
+    available_(0), byteCount_(0) {}
+  ~KdbMemoryOutputStream() final {
+    for (std::vector<uint8_t*>::const_iterator it = data_.begin();
+      it != data_.end(); ++it) {
+      delete[] * it;
+    }
+  }
+
+  bool next(uint8_t** data, size_t* len) final {
+    if (available_ == 0) {
+      data_.emplace_back(std::move(new uint8_t[chunkSize_]));
+      available_ = chunkSize_;
+    }
+    *data = &data_.back()[chunkSize_ - available_];
+    *len = available_;
+    byteCount_ += available_;
+    available_ = 0;
+    return true;
+  }
+
+  void backup(size_t len) final {
+    available_ += len;
+    byteCount_ -= len;
+  }
+
+  uint64_t byteCount() const final {
+    return byteCount_;
+  }
+
+  void flush() final {}
+
+  K ToKdb(KdbType type) {
+    K result = ktn(type, byteCount_);
+    size_t index = 0;
+    size_t remaining = byteCount_;
+    for (const auto i : data_) {
+      size_t bytes_from_chunk = remaining > chunkSize_ ? chunkSize_ : remaining;
+      std::memcpy(kG(result) + index, i, bytes_from_chunk);
+      index += bytes_from_chunk;
+      remaining -= bytes_from_chunk;
+      if (!remaining)
+        break;
+    }
+    return result;
+  }
+};
+
 K Encode(K schema, K data, K options)
 {
   KDB_EXCEPTION_TRY;
@@ -619,20 +674,15 @@ K Encode(K schema, K data, K options)
   auto datum = avro::GenericDatum(*avro_schema.get());
   EncodeDatum("", datum, data, false);
 
-  std::ostringstream oss;
-  auto ostream = avro::ostreamOutputStream(oss);
-  encoder->init(*ostream);
+  KdbMemoryOutputStream ostream;
+  encoder->init(ostream);
 
   avro::GenericWriter writer(*avro_schema.get(), encoder);
   writer.write(datum);
 
   encoder->flush();
-  const auto str = oss.rdbuf()->str();
 
-  K result = ktn(avro_format == "BINARY" ? KG : KC, str.length());
-  std::memcpy(kG(result), str.c_str(), str.length());
-
-  return result;
+  return ostream.ToKdb(avro_format == "BINARY" ? KG : KC);
 
   KDB_EXCEPTION_CATCH;
 }

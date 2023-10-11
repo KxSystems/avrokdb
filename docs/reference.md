@@ -189,6 +189,7 @@ The function returns a kdb+ object representing the Avro data having applied the
 Supported options:
 
 - `AVRO_FORMAT`- String identifying whether the Avro serialised data is in binary or JSON format.  Valid options `BINARY` or `JSON`, default `BINARY`.
+- `DECODE_OFFSET` - Long offset into the `data` buffer that decoding should begin from.  Can be used to skip over a header in the buffer.  Default 0. 
 
 ```q
 q)schema:.avrokdb.schemaFromFile["examples/scalars.avsc"];

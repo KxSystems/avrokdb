@@ -13,11 +13,13 @@
 namespace Options
 {
   // Int options
+  const std::string DECODE_OFFSET = "DECODE_OFFSET";
 
   // String options
   const std::string AVRO_FORMAT = "AVRO_FORMAT";
 
   const static std::set<std::string> int_options = {
+    DECODE_OFFSET
   };
   const static std::set<std::string> string_options = {
     AVRO_FORMAT

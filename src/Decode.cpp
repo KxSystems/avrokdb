@@ -571,16 +571,15 @@ K Decode(K schema, K data, K options)
   else
     return krr((S)"Unsupported avro decoding type (should be BINARY or JSON)");
 
+  int64_t decode_offset = 0;
+  options_parser.GetIntOption(Options::DECODE_OFFSET, decode_offset);
+
   auto decoder = avro::validatingDecoder(*avro_schema.get(), base_decoder);
 
-  std::istringstream iss;
-  iss.str(std::string((char*)kG(data), data->n));
-
-  auto istream = avro::istreamInputStream(iss);
+  auto istream = avro::memoryInputStream((const uint8_t*)kG(data) + decode_offset, data->n - decode_offset);
   decoder->init(*istream);
 
   avro::GenericReader reader(*avro_schema.get(), decoder);
-
   avro::GenericDatum datum;
   reader.read(datum);
   reader.drain();
