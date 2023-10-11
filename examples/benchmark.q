@@ -1,7 +1,7 @@
 \l q/avrokdb.q
 
 array_len:10;
-reps:10000;
+reps:1000000;
 
 -1 "\n<----- Record of arrays of scalar types ----->\n";
 sc:.avrokdb.schemaFromFile["examples/arrays.avsc"];
