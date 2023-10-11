@@ -588,3 +588,21 @@ K Decode(K schema, K data, K options)
 
   KDB_EXCEPTION_CATCH;
 }
+
+#include <fstream>
+int main(int argc, char* argv[])
+{
+  if (argc != 3) {
+    std::cerr << "Usage: profile <schema file> <binary data file>";
+    return 1;
+  }
+  K schema = SchemaFromFile(ks(argv[1]));
+  auto input = std::ifstream(argv[2]);
+  K data = ktn(KG, 4096);
+  input.read((char*)kG(data), data->n);
+
+  for (auto i = 0; i < 1000000; ++i)
+    r0(Decode(schema, data, Identity()));
+
+  return 0;
+}

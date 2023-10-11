@@ -10,6 +10,10 @@ extern "C"
   /// binary or JSON format.  Valid options "BINARY" or "JSON", default
   /// "BINARY".
   ///
+  /// * DECODE_OFFSET (long).  Offset into the `data` buffer that decoding
+  /// should begin from.  Can be used to skip over a header in the buffer.
+  /// Default 0. 
+  ///
   /// @param schema.  Foreign object containing the Avro schema to use for
   /// decoding. 
   ///
