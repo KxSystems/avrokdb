@@ -599,7 +599,7 @@ int main(int argc, char* argv[])
     return 1;
   }
   K schema = SchemaFromFile(ks(argv[1]));
-  auto input = std::ifstream();
+  std::ifstream input;
   input.open(argv[2]);
 
   K data = ktn(KG, 4096);
