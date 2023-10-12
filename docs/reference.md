@@ -146,6 +146,7 @@ The function returns Avro serialised data, either 4h for binary encoding or 10h 
 Supported options:
 
 - `AVRO_FORMAT`- String identifying whether the kdb+ object should be encoded into Avro binary or JSON format.  Valid options `BINARY`, `JSON` or `PRETTY_JSON`, default `BINARY`.
+- `MULTITHREADED` - Long flag.  By default avrokdb is optimised to reuse the existing encoder for this schema.  However, Avro encoders do not support concurrent access and therefore if running `encode` with `peach` this option **must** be set to non-zero to disable this optimisation.  Default 0.
 
 ```q
 q)schema:.avrokdb.schemaFromFile["examples/scalars.avsc"];
@@ -189,6 +190,8 @@ The function returns a kdb+ object representing the Avro data having applied the
 Supported options:
 
 - `AVRO_FORMAT`- String identifying whether the Avro serialised data is in binary or JSON format.  Valid options `BINARY` or `JSON`, default `BINARY`.
+- `DECODE_OFFSET` - Long offset into the `data` buffer that decoding should begin from.  Can be used to skip over a header in the buffer.  Default 0. 
+- `MULTITHREADED` - Long flag.  By default avrokdb is optimised to reuse the existing decoder for this schema.  However, Avro decoders do not support concurrent access and therefore if running `decode` with `peach` this option **must** be set to non-zero to disable this optimisation.  Default 0.
 
 ```q
 q)schema:.avrokdb.schemaFromFile["examples/scalars.avsc"];

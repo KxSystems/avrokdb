@@ -10,6 +10,11 @@ extern "C"
   /// encoded into Avro binary or JSON format.  Valid options "BINARY", "JSON"
   /// or "PRETTY_JSON", default "BINARY".
   ///
+  /// * MULTITHREADED (long).  By default avrokdb is optimised to reuse the
+  /// existing encoder for this schema.  However, Avro encoders do not support
+  /// concurrent access and therefore if running encode with peach this option
+  /// must be set to non-zero to disable this optimisation.  Default 0.
+  /// 
   /// @param schema.  Foreign object containing the Avro schema to use for
   /// encoding. 
   ///
