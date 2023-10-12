@@ -256,7 +256,7 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_NULL:
   {
-    for (const auto& i : array_data)
+    for (auto i = 0ull; i < array_data.size(); ++i)
       kK(result)[index++] = Identity();
     break;
   }
