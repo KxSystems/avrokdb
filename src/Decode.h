@@ -14,6 +14,11 @@ extern "C"
   /// should begin from.  Can be used to skip over a header in the buffer.
   /// Default 0. 
   ///
+  /// * MULTITHREADED (long).  By default avrokdb is optimised to reuse the
+  /// existing decoder for this schema.  However, Avro decoders do not support
+  /// concurrent access and therefore if running decode with peach this option
+  /// must be set to non-zero to disable this optimisation.  Default 0.
+  ///
   /// @param schema.  Foreign object containing the Avro schema to use for
   /// decoding. 
   ///

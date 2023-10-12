@@ -4,6 +4,7 @@
 #include <avro/GenericDatum.hh>
 #include <avro/Generic.hh>
 #include <avro/Encoder.hh>
+#include <avro/Decoder.hh>
 #include <avro/Stream.hh>
 #include <avro/LogicalType.hh>
 
@@ -655,21 +656,42 @@ K Encode(K schema, K data, K options)
 
   auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
 
-  auto avro_schema = GetForeign<avro::ValidSchema>(schema);
+  auto avro_foreign = GetForeign<AvroForeign>(schema);
+  auto avro_schema = avro_foreign->schema;
   
-  avro::EncoderPtr base_encoder;
   std::string avro_format = "BINARY";
   options_parser.GetStringOption(Options::AVRO_FORMAT, avro_format);
-  if (avro_format == "BINARY")
-    base_encoder = avro::binaryEncoder();
-  else if (avro_format == "JSON")
-    base_encoder = avro::jsonEncoder(*avro_schema.get());
-  else if (avro_format == "JSON_PRETTY")
-    base_encoder = avro::jsonPrettyEncoder(*avro_schema.get());
-  else
-    return krr((S)"Unsupported avro encoding type (should be BINARY, JSON or JSON_PRETTY)");
-  
-  auto encoder = avro::validatingEncoder(*avro_schema.get(), base_encoder);
+
+  int64_t multithreaded = 0;
+  options_parser.GetIntOption(Options::MULTITHREADED, multithreaded);
+
+  // Find the encoder to use.  Encoders don't support multithreaded use so if
+  // running in this mode the encoder is created on the fly.  If running single
+  // threaded we use the already created encoder in the foreign which is less
+  // expensive.
+  avro::EncoderPtr encoder;
+  if (multithreaded) {
+    avro::EncoderPtr base_encoder;
+    if (avro_format == "BINARY")
+      base_encoder = avro::binaryEncoder();
+    else if (avro_format == "JSON")
+      base_encoder = avro::jsonEncoder(*avro_schema.get());
+    else if (avro_format == "JSON_PRETTY")
+      base_encoder = avro::jsonPrettyEncoder(*avro_schema.get());
+    else
+      return krr((S)"Unsupported avro encoding type (should be BINARY, JSON or JSON_PRETTY)");
+
+    encoder = avro::validatingEncoder(*avro_schema.get(), base_encoder);
+  } else {
+    if (avro_format == "BINARY")
+      encoder = avro_foreign->binary_encoder;
+    else if (avro_format == "JSON")
+      encoder = avro_foreign->json_encoder;
+    else if (avro_format == "JSON_PRETTY")
+      encoder = avro_foreign->json_pretty_encoder;
+    else
+      return krr((S)"Unsupported avro encoding type (should be BINARY, JSON or JSON_PRETTY)");
+  }
 
   auto datum = avro::GenericDatum(*avro_schema.get());
   EncodeDatum("", datum, data, false);

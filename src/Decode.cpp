@@ -3,6 +3,7 @@
 #include <avro/ValidSchema.hh>
 #include <avro/GenericDatum.hh>
 #include <avro/Generic.hh>
+#include <avro/Encoder.hh>
 #include <avro/Decoder.hh>
 #include <avro/Stream.hh>
 #include <avro/LogicalType.hh>
@@ -559,22 +560,43 @@ K Decode(K schema, K data, K options)
 
   auto options_parser = KdbOptions(options, Options::string_options, Options::int_options);
 
-  auto avro_schema = GetForeign<avro::ValidSchema>(schema);
+  auto avro_foreign = GetForeign<AvroForeign>(schema);
+  auto avro_schema = avro_foreign->schema;
 
-  avro::DecoderPtr base_decoder;
   std::string avro_format = "BINARY";
   options_parser.GetStringOption(Options::AVRO_FORMAT, avro_format);
-  if (avro_format == "BINARY")
-    base_decoder = avro::binaryDecoder();
-  else if (avro_format == "JSON")
-    base_decoder = avro::jsonDecoder(*avro_schema.get());
-  else
-    return krr((S)"Unsupported avro decoding type (should be BINARY or JSON)");
 
   int64_t decode_offset = 0;
   options_parser.GetIntOption(Options::DECODE_OFFSET, decode_offset);
+  if (decode_offset > data->n)
+    return krr((S)"Decode offset is greater than length of data");
 
-  auto decoder = avro::validatingDecoder(*avro_schema.get(), base_decoder);
+  int64_t multithreaded = 0;
+  options_parser.GetIntOption(Options::MULTITHREADED, multithreaded);
+
+  // Find the decoder to use.  Decoders don't support multithreaded use so if
+  // running in this mode the decoder is created on the fly.  If running single
+  // threaded we use the already created decoder in the foreign which is less
+  // expensive.
+  avro::DecoderPtr decoder;
+  if (multithreaded) {
+    avro::DecoderPtr base_decoder;
+    if (avro_format == "BINARY")
+      base_decoder = avro::binaryDecoder();
+    else if (avro_format == "JSON")
+      base_decoder = avro::jsonDecoder(*avro_schema.get());
+    else
+      return krr((S)"Unsupported avro decoding type (should be BINARY or JSON)");
+
+    decoder = avro::validatingDecoder(*avro_schema.get(), base_decoder);
+  } else {
+    if (avro_format == "BINARY")
+      decoder = avro_foreign->binary_decoder;
+    else if (avro_format == "JSON")
+      decoder = avro_foreign->json_decoder;
+    else
+      return krr((S)"Unsupported avro decoding type (should be BINARY or JSON)");
+  }
 
   auto istream = avro::memoryInputStream((const uint8_t*)kG(data) + decode_offset, data->n - decode_offset);
   decoder->init(*istream);

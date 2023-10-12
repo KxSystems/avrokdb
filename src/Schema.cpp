@@ -9,6 +9,8 @@
 #include <avro/ValidSchema.hh>
 #include <avro/LogicalType.hh>
 #include <avro/Compiler.hh>
+#include <avro/Encoder.hh>
+#include <avro/Decoder.hh>
 
 #include "HelperFunctions.h"
 #include "Schema.h"
@@ -27,7 +29,7 @@ K SchemaFromFile(K filename)
 
   auto avro_schema = avro::compileJsonSchemaFromFile(GetKdbString(filename).c_str());
 
-  return MakeForeign(avro_schema);
+  return MakeForeign(AvroForeign(avro_schema));
 
   KDB_EXCEPTION_CATCH;
 }
@@ -41,7 +43,7 @@ K SchemaFromString(K schema)
 
   auto avro_schema = avro::compileJsonSchemaFromString(GetKdbString(schema));
 
-  return MakeForeign(avro_schema);
+  return MakeForeign(AvroForeign(avro_schema));
 
   KDB_EXCEPTION_CATCH;
 }
@@ -50,8 +52,8 @@ K GetSchema(K schema)
 {
   KDB_EXCEPTION_TRY;
 
-  auto avro_schema = GetForeign<avro::ValidSchema>(schema);
-  const auto& schema_str = avro_schema->toJson(true);
+  auto avro_foreign = GetForeign<AvroForeign>(schema);
+  const auto& schema_str = avro_foreign->schema->toJson(true);
   K result = ktn(KC, schema_str.length());
   std::memcpy(kG(result), schema_str.data(), schema_str.length());
 
