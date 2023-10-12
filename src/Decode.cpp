@@ -169,19 +169,19 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   switch (array_type) {
   case avro::AVRO_BOOL:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kG(result)[index++] = i.value<bool>();
     break;
   }
   case avro::AVRO_BYTES:
   {
     if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& bytes = i.value<std::vector<uint8_t>>();
         kK(result)[index++] = DecimalFromBytes(field, array_logical_type, bytes);
       }
     } else {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& bytes = i.value<std::vector<uint8_t>>();
         K k_bytes = ktn(KG, bytes.size());
         std::memcpy(kG(k_bytes), bytes.data(), bytes.size());
@@ -192,30 +192,30 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_DOUBLE:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kF(result)[index++] = i.value<double>();
     break;
   }
   case avro::AVRO_ENUM:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kS(result)[index++] = ss((S)i.value<avro::GenericEnum>().symbol().c_str());
     break;
   }
   case avro::AVRO_FIXED:
   {
     if (array_logical_type.type() == avro::LogicalType::DECIMAL) {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& fixed = i.value<avro::GenericFixed>().value();
         kK(result)[index++] = DecimalFromBytes(field, array_logical_type, fixed);
       }
     } else if (array_logical_type.type() == avro::LogicalType::DURATION) {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& fixed = i.value<avro::GenericFixed>().value();
         kK(result)[index++] = DurationFromBytes(field, fixed);
       }
     } else {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& fixed = i.value<avro::GenericFixed>().value();
         K k_fixed = ktn(KG, fixed.size());
         std::memcpy(kG(k_fixed), fixed.data(), fixed.size());
@@ -226,7 +226,7 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   }
   case avro::AVRO_FLOAT:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kE(result)[index++] = i.value<float>();
     break;
   }
@@ -234,10 +234,10 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   {
     if (array_logical_type.type() == avro::LogicalType::DATE || array_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
       TemporalConversion tc(field, array_logical_type.type());
-      for (auto i : array_data)
+      for (const auto& i : array_data)
         kI(result)[index++] = tc.AvroToKdb(i.value<int32_t>());
     } else {
-      for (auto i : array_data)
+      for (const auto& i : array_data)
         kI(result)[index++] = i.value<int32_t>();
     }
     break;
@@ -246,31 +246,31 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   {
     if (array_logical_type.type() == avro::LogicalType::TIME_MICROS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || array_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
       TemporalConversion tc(field, array_logical_type.type());
-      for (auto i : array_data)
+      for (const auto& i : array_data)
         kJ(result)[index++] = tc.AvroToKdb(i.value<int64_t>());
     } else {
-      for (auto i : array_data)
+      for (const auto& i : array_data)
         kJ(result)[index++] = i.value<int64_t>();
     }
     break;
   }
   case avro::AVRO_NULL:
   {
-    for (auto i : array_data)
+    for (auto i = 0ull; i < array_data.size(); ++i)
       kK(result)[index++] = Identity();
     break;
   }
   case avro::AVRO_STRING:
   {
     if (array_logical_type.type() == avro::LogicalType::UUID) {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& string = i.value<std::string>();
         TYPE_CHECK_KDB(field, avro::toString(array_type), "avro uuid length", 36, string.length());
         U k_guid = StringToGuid(string);
         kU(result)[index++] = k_guid;
       }
     } else {
-      for (auto i : array_data) {
+      for (const auto& i : array_data) {
         const auto& string = i.value<std::string>();
         K k_string = ktn(KC, string.length());
         std::memcpy(kG(k_string), string.c_str(), string.length());
@@ -282,26 +282,26 @@ K DecodeArray(const std::string& field, const avro::GenericArray& array_datum)
   case avro::AVRO_RECORD:
   {
     kK(result)[index++] = Identity();
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kK(result)[index++] = DecodeRecord(field, i.value<avro::GenericRecord>());
     break;
   }
   case avro::AVRO_ARRAY:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kK(result)[index++] = DecodeArray(field, i.value<avro::GenericArray>());
     break;
   }
   case avro::AVRO_UNION:
   {
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kK(result)[index++] = DecodeUnion(field, i);
     break;
   }
   case avro::AVRO_MAP:
   {
     kK(result)[index++] = Identity();
-    for (auto i : array_data)
+    for (const auto& i : array_data)
       kK(result)[index++] = DecodeMap(field, i.value<avro::GenericMap>());
     break;
   }
@@ -336,7 +336,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   switch (map_type) {
   case avro::AVRO_BOOL:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kG(values)[index++] = i.second.value<bool>();
     }
@@ -345,13 +345,13 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   case avro::AVRO_BYTES:
   {
     if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& bytes = i.second.value<std::vector<uint8_t>>();
         kK(values)[index++] = DecimalFromBytes(field, map_logical_type, bytes);
       }
     } else {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& bytes = i.second.value<std::vector<uint8_t>>();
         K k_bytes = ktn(KG, bytes.size());
@@ -363,7 +363,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_DOUBLE:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kF(values)[index++] = i.second.value<double>();
     }
@@ -371,7 +371,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_ENUM:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kS(values)[index++] = ss((S)i.second.value<avro::GenericEnum>().symbol().c_str());
     }
@@ -380,19 +380,19 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   case avro::AVRO_FIXED:
   {
     if (map_logical_type.type() == avro::LogicalType::DECIMAL) {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& fixed = i.second.value<avro::GenericFixed>().value();
         kK(values)[index++] = DecimalFromBytes(field, map_logical_type, fixed);
       }
     } else if (map_logical_type.type() == avro::LogicalType::DURATION) {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& fixed = i.second.value<avro::GenericFixed>().value();
         kK(values)[index++] = DurationFromBytes(field, fixed);
       }
     } else {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& fixed = i.second.value<avro::GenericFixed>().value();
         K k_fixed = ktn(KG, fixed.size());
@@ -404,7 +404,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_FLOAT:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kE(values)[index++] = i.second.value<float>();
     }
@@ -414,12 +414,12 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     if (map_logical_type.type() == avro::LogicalType::DATE || map_logical_type.type() == avro::LogicalType::TIME_MILLIS) {
       TemporalConversion tc(field, map_logical_type.type());
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         kI(values)[index++] = tc.AvroToKdb(i.second.value<int32_t>());
       }
     } else {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         kI(values)[index++] = i.second.value<int32_t>();
       }
@@ -430,19 +430,19 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     if (map_logical_type.type() == avro::LogicalType::TIME_MICROS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MILLIS || map_logical_type.type() == avro::LogicalType::TIMESTAMP_MICROS) {
       TemporalConversion tc(field, map_logical_type.type());
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         kJ(values)[index++] = tc.AvroToKdb(i.second.value<int64_t>());
       }
     } else {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         kJ(values)[index++] = i.second.value<int64_t>();
       }
     }
     break;
 
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kJ(values)[index++] = i.second.value<int64_t>();
     }
@@ -450,7 +450,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_NULL:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kK(values)[index++] = Identity();
     }
@@ -459,7 +459,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   case avro::AVRO_STRING:
   {
     if (map_logical_type.type() == avro::LogicalType::UUID) {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& string = i.second.value<std::string>();
         TYPE_CHECK_KDB(field, avro::toString(map_type), "avro uuid length", 36, string.length());
@@ -467,7 +467,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
         kU(values)[index++] = k_guid;
       }
     } else {
-      for (auto i : map_data) {
+      for (const auto& i : map_data) {
         kS(keys)[index] = ss((S)i.first.c_str());
         const auto& string = i.second.value<std::string>();
         K k_string = ktn(KC, string.length());
@@ -481,7 +481,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     kS(values)[index] = ss((S)"");
     kK(values)[index++] = Identity();
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kK(values)[index++] = DecodeRecord(field, i.second.value<avro::GenericRecord>());
     }
@@ -489,7 +489,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_ARRAY:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kK(values)[index++] = DecodeArray(field, i.second.value<avro::GenericArray>());
     }
@@ -497,7 +497,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   }
   case avro::AVRO_UNION:
   {
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kK(values)[index++] = DecodeUnion(field, i.second);
     }
@@ -507,7 +507,7 @@ K DecodeMap(const std::string& field, const avro::GenericMap& map_datum)
   {
     kS(keys)[index] = ss((S)"");
     kK(values)[index++] = Identity();
-    for (auto i : map_data) {
+    for (const auto& i : map_data) {
       kS(keys)[index] = ss((S)i.first.c_str());
       kK(values)[index++] = DecodeMap(field, i.second.value<avro::GenericMap>());
     }
