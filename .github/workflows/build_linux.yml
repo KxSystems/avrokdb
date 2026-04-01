@@ -1,0 +1,88 @@
+name: linux-avro-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: rockylinux:8
+
+    env:
+      AVRO_INSTALL: ${{ github.workspace }}/cbuild/install
+      OUTPUT_FILE: avrokdb-linux.tgz
+      QHOME: ${{ github.workspace }}/qhome
+
+    steps:
+      - name: Install build tools
+        run: |
+          yum install -y dnf-plugins-core &&
+          yum config-manager --set-enabled powertools &&
+          yum -y install \
+            git \
+            gcc \
+            gcc-c++ \
+            make \
+            cmake \
+            wget \
+            tar \
+            gzip \
+            boost-devel \
+            snappy-devel
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Restore cached avro lib
+        if: steps.cache-avro.outputs.cache-hit != 'true'
+        id: cache-avro
+        uses: actions/cache@v5
+        with:
+          path: |
+            cbuild/install
+          key: ${{ runner.os }}-avro-1.11.2
+          restore-keys: |
+            ${{ runner.os }}-avro-1.11.2
+
+      - name: Build avro lib
+        if: steps.cache-avro.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ${{ env.AVRO_INSTALL }}
+          mkdir cbuild
+          cd cbuild
+          git clone https://github.com/apache/avro.git
+          cd avro
+          git checkout refs/tags/release-1.11.2 --
+          cd lang/c++
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_INSTALL_PREFIX="$AVRO_INSTALL" ..
+          cmake --build . --config Release
+          cmake --build . --config Release --target install
+          cd ../../../..
+
+      - name: Build
+        run: |
+          mkdir cmake && cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . --target install && cd .. && tar  -zcvf "$OUTPUT_FILE" -C cmake/avrokdb .
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: avrokdb-linux
+          path: ${{ env.OUTPUT_FILE }}
+          retention-days: 1
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-assets.yml

@@ -2,7 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.1.3..3.31)
 project(avrokdb CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -DKXVER=3")
@@ -17,12 +17,12 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX)
 
 message(STATUS "Generator : ${CMAKE_GENERATOR}")
 message(STATUS "Build Tool : ${CMAKE_BUILD_TOOL}")
-message(STATUS "Avro install : ${AVRO_INSTALL}")
-message(STATUS "Boost install : ${BOOST_INSTALL}")
+message(STATUS "Avro install : $ENV{AVRO_INSTALL}")
+message(STATUS "Boost install : $ENV{BOOST_INSTALL}")
 
 include_directories (
-	"${AVRO_INSTALL}/include"
-    "${BOOST_INSTALL}/include"
+	"$ENV{AVRO_INSTALL}/include"
+    "$ENV{BOOST_INSTALL}/include"
     ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include  # where avro-cpp has been installed using vcpkg
     ${CMAKE_BINARY_DIR} # For 'k.h', downloaded below
 )
@@ -30,7 +30,7 @@ include_directories (
 message(STATUS "Looking for avrocpp")
 find_library(AVRO_LIBRARY
 	NAMES avrocpp_s avrocpp
-	HINTS "${AVRO_INSTALL}/lib/"
+	HINTS "$ENV{AVRO_INSTALL}/lib/"
 )
 
 message(STATUS "Avro library : ${AVRO_LIBRARY}")
@@ -41,8 +41,8 @@ if (MSVC)
     set(INSTALL_SCRIPT "install.bat")
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(LINK_LIBS "${CMAKE_BINARY_DIR}/q.lib")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE /D _WINSOCK_DEPRECATED_NO_WARNINGS") 
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE /D _WINSOCK_DEPRECATED_NO_WARNINGS")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /utf-8 /D WIN32_LEAN_AND_MEAN /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE /D _WINSOCK_DEPRECATED_NO_WARNINGS") 
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /utf-8 /D WIN32_LEAN_AND_MEAN /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE /D _WINSOCK_DEPRECATED_NO_WARNINGS")
 else()
     set(INSTALL_SCRIPT "install.sh")
     set(LINK_LIBS "")
@@ -78,8 +78,9 @@ file(TO_CMAKE_PATH $ENV{QHOME} QHOME_PATH)
 # Copy built shared object after build instead of during installation
 add_custom_command(TARGET ${MY_LIBRARY_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${MY_LIBRARY_NAME}>" ${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/lib/${MY_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
-    DEPENDS ${MY_LIBRARY_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "$<TARGET_FILE:${MY_LIBRARY_NAME}>"
+            "${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/lib/${MY_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 
 # Minimum build/install move binary to $QHOME/<QARCH>
