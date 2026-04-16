@@ -60,7 +60,7 @@ jobs:
 
       - name: Build 
         run: |
-          mkdir "$QHOME" && mkdir cmake && cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=${{ env.AVRO_INSTALL }} && make install && cd .. && tar  -zcvf "$OUTPUT_FILE" -C cmake/avrokdb .
+          mkdir cmake && cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=${{ env.AVRO_INSTALL }} && make install && cd .. && tar  -zcvf "$OUTPUT_FILE" -C cmake/avrokdb .
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v6
