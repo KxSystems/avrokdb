@@ -1,0 +1,61 @@
+name: mac-avro-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    env:
+      AVRO_INSTALL: ${{ github.workspace }}/cbuild/install
+      OUTPUT_FILE: avrokdb-mac.tgz
+      QHOME: ${{ github.workspace }}/q
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Restore cached avro lib
+        id: cache-avro
+        uses: actions/cache@v5
+        with:
+          path: |
+            cbuild/install
+          key: ${{ runner.os }}-avro
+          restore-keys: |
+            ${{ runner.os }}-avro
+
+      - name: Get avro
+        if: steps.cache-avro.outputs.cache-hit != 'true'
+        run: |
+          brew version-install fmt 12.1.0 &&
+          brew version-install avro-cpp 1.12.1 &&
+          mkdir -p ${{ env.AVRO_INSTALL }} &&
+          cp -r /opt/homebrew/Cellar/avro-cpp/1.12.1/* ${{ env.AVRO_INSTALL }} &&
+          cp -r /opt/homebrew/Cellar/boost/1.90.0_1/* ${{ env.AVRO_INSTALL }} &&
+          cp -r /opt/homebrew/Cellar/fmt/12.1.0/* ${{ env.AVRO_INSTALL }}
+
+      - name: Build 
+        run: |
+          mkdir "$QHOME" && mkdir cmake && cd cmake && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=17 -DAVRO_INSTALL=${{ env.AVRO_INSTALL}} -DBOOST_INSTALL=${{ env.AVRO_INSTALL}} && make install && cd .. && tar  -zcvf "$OUTPUT_FILE" -C cmake/avrokdb .
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: kdbavro-mac
+          path: ${{ env.OUTPUT_FILE }}
+          retention-days: 1
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-assets.yml
