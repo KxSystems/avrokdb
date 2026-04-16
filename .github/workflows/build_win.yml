@@ -1,0 +1,74 @@
+name: win-avro-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      AVRO_INSTALL: ${{ github.workspace }}\cbuild\install
+      OUTPUT_FILE: avrokdb-win.tgz
+      QHOME: ${{ github.workspace }}\q
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Restore cached avro lib
+        id: cache-avro
+        uses: actions/cache@v5
+        with:
+          path: |
+            cbuild/install
+          key: ${{ runner.os }}-avro
+          restore-keys: |
+            ${{ runner.os }}-avro
+
+      - name: Get avro
+        if: steps.cache-avro.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          mkdir -p cbuild/install
+          cd cbuild
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          git checkout refs/tags/2024.06.15-- 
+          ./bootstrap-vcpkg.bat
+          ./vcpkg install boost-iostreams:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows snappy:x64-windows
+          ./vcpkg install avro-cpp:x64-windows
+          cp -r installed/x64-windows/* ${{ env.AVRO_INSTALL}}
+          cd ..
+          cd ..
+
+      - name: Build 
+        run: |
+          mkdir "${{ env.QHOME }}"
+          mkdir cmake
+          cd cmake
+          cmake -G "Visual Studio 17 2022" -DCMAKE_CXX_STANDARD=17 -DAVRO_INSTALL="${{ env.AVRO_INSTALL }}" ..
+          cmake --build . --config Release
+          cmake --build . --config Release --target install
+          cd ..
+          7z a -tzip -r "${{ env.OUTPUT_FILE }}" cmake\avrokdb\*
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: kdbavro-windows
+          path: ${{ env.OUTPUT_FILE }}
+          retention-days: 1
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-assets.yml
