@@ -8,7 +8,7 @@ extern "C"
   ///
   /// * AVRO_FORMAT (string).  Describes whether the kdb+ object should be
   /// encoded into Avro binary or JSON format.  Valid options "BINARY", "JSON"
-  /// or "PRETTY_JSON", default "BINARY".
+  /// or "JSON_PRETTY", default "BINARY".
   ///
   /// * MULTITHREADED (long).  By default avrokdb is optimised to reuse the
   /// existing encoder for this schema.  However, Avro encoders do not support
@@ -27,5 +27,5 @@ extern "C"
   ///
   /// @return Avro serialised data, either 4h for binary encoding or 10h for
   /// JSON encoding.
-  EXP K Encode(K schema, K data, K options);
+  K Encode(K schema, K data, K options);
 }

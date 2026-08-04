@@ -1,4 +1,4 @@
-\l q/avrokdb.q
+$[5<=.z.K;.avrokdb:use`kx.avro;system"l q/init.q"];
 
 singleTest:{[schema_file; input; options]
     sc:.avrokdb.schemaFromFile[schema_file];

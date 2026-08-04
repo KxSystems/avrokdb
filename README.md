@@ -2,12 +2,12 @@
 
 ![Avro](Apache_Avro_Logo.svg)
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/avrokdb?include_prereleases)](https://github.com/kxsystems/avrokdb/releases) [![Travis (.com) branch](https://travis-ci.com/KxSystems/avrokdb.svg?branch=main)](https://travis-ci.com/KxSystems/avrokdb)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/avrokdb?include_prereleases)](https://github.com/kxsystems/avrokdb/releases)
 
 
 ## Introduction
 
-This interface allows kdb+ to users encode and decode Apache Avro serialized data.
+This interface allows kdb+ users encode and decode Apache Avro serialized data.
 
 This is part of the [*Fusion for kdb+*](http://code.kx.com/q/interfaces/fusion/) interface collection.
 
@@ -37,24 +37,18 @@ Avro relies on schemas which are defined with JSON. When Avro data is read, the 
 ### Requirements
 
 - kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
+- Avro C++ libraries
 
 ### Installing a release
 
 It is recommended that a user install this interface using a release package. This is completed in a number of steps:
 
-1. If running on Windows, ensure you have downloaded/installed the Avro C++ libraries following the instructions [here](#windows).  This step is not necessary on Linux or macOS because their `avrokdb` release packages are statically linked with `libavrocpp`.
-2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture.
-3. Install script `avrokdb.q` to `$QHOME`, and binary file `lib/arrowkdb.(so|dll)` to `$QHOME/[mlw](64)`, by executing the following from the unzipped release package directory:
+1. [Install the required dependencies](#third-party-library-installation)
+1. [Download a release](https://github.com/KxSystems/avrokdb/releases) and then unzip to your module directory. The following example assumes the default install location for KDB-X.
 
-```bash
-## Linux/macOS
-chmod +x install.sh && ./install.sh
-
-## Windows
-install.bat
 ```
-
-
+unzip avro-l64.zip -d ~/.kx/mod
+```
 
 ## Building and installing from source
 
@@ -101,6 +95,7 @@ On linux `avrocpp` should be built from source.
    cd lang/c++
    mkdir build
    mkdir install
+   mkdir install/cmake
    export AVRO_INSTALL=$(pwd)/install
    cd build
    ```
@@ -169,9 +164,8 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
 
 In order to successfully build and install this interface from source, the following environment variables must be set:
 
-1. `AVRO_INSTALL` = Location of the Avro C++ API release (only required if `avrocpp` is not installed globally on the system, e.g. on Linux or Windows where `avrocpp` was built from source)
-2. `BOOST_INSTALL` = Locaion of the Boost C++ library (only required if `boost` is not installed globally on the system)
-3. `QHOME` = Q installation directory (directory containing `q.k`)
+1. `QHOME` = Q installation directory (directory containing `q.k`)
+2. if `avrocpp` or `boost` is not installed globally, add `-DCMAKE_PREFIX_PATH=<your/install/path>` to cmake
 
 From a shell prompt (on Linux/macOS) or Visual Studio command prompt (on Windows), clone the `avrokdb` source from github:
 
@@ -182,18 +176,20 @@ cd avrokdb
 
 Create the cmake build directory and generate the build files (this will use the system's default cmake generator):
 
+If you want to create avrokdb as a KDB-X module, add `-DQMOD=ON` and `-DCMAKE_INSTALL_PREFIX="<kx/module/path>"`
+
 ```bash
 mkdir build
 cd build
 
-## Linux (using the Arrow installation which was build from source as above)
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=$AVRO_INSTALL
+## Linux (using the Avro installation which was build from source as above)
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_PREFIX_PATH=$AVRO_INSTALL
 
 ## macOS
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11
 
-## Windows (using the Arrow installation which was build from source as above)
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=%AVRO_INSTALL%
+## Windows (using the Avro installation which was build from source as above)
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_PREFIX_PATH=%AVRO_INSTALL%
 ```
 
 Start the build:
@@ -208,7 +204,9 @@ Create the install package and deploy to `$QHOME`:
 cmake --build . --config Release --target install
 ```
 
+## Conda package
 
+For information on how to build and host a conda package see [`Conda usage`](https://github.com/KxSystems/qmamba/wiki/Build)
 
 ## Documentation
 

@@ -1,4 +1,4 @@
-\l q/avrokdb.q
+$[5<=.z.K;.avrokdb:use`kx.avro;system"l q/init.q"];
 
 array_len:10;
 reps:1000000;

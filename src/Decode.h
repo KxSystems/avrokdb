@@ -30,5 +30,5 @@ extern "C"
   ///
   /// @return kdb+ object representing the Avro data having applied the
   /// appropriate type mappings
-  EXP K Decode(K schema, K data, K options);
+  K Decode(K schema, K data, K options);
 }

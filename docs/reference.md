@@ -1,10 +1,10 @@
 # Function reference
 
-These functions are exposed within the `.avrokdb` namespace, allowing users to convert data between Avro and kdb+.
+These functions are exposed within the `avrokdb` module, allowing users to convert data between Avro and kdb+.
+**Note:** In the documentation we use `.avrokdb` to import `kx.avro` with ```.avrokdb: use `kx.avro```
 
 
-
-## `.avrokdb`   Avro interface
+## `.avrokdb` Avro interface
 
 
 object | use
@@ -145,7 +145,7 @@ The function returns Avro serialised data, either 4h for binary encoding or 10h 
 
 Supported options:
 
-- `AVRO_FORMAT`- String identifying whether the kdb+ object should be encoded into Avro binary or JSON format.  Valid options `BINARY`, `JSON` or `PRETTY_JSON`, default `BINARY`.
+- `AVRO_FORMAT`- String identifying whether the kdb+ object should be encoded into Avro binary or JSON format.  Valid options `BINARY`, `JSON` or `JSON_PRETTY`, default `BINARY`.
 - `MULTITHREADED` - Long flag.  By default avrokdb is optimised to reuse the existing encoder for this schema.  However, Avro encoders do not support concurrent access and therefore if running `encode` with `peach` this option **must** be set to non-zero to disable this optimisation.  Default 0.
 
 ```q
@@ -176,7 +176,7 @@ q)-1 .avrokdb.encode[schema;input;(enlist `AVRO_FORMAT)!enlist `JSON_PRETTY];
 *Decode Avro serialised data to a kdb+ object*
 
 ```txt
-.avrokdb.encode[schema;data;options]
+.avrokdb.decode[schema;input;options]
 ```
 
 where:

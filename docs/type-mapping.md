@@ -2,7 +2,7 @@
 
 Apache Avro support a [rich set of datatypes](https://avro.apache.org/docs/1.11.1/specification/) including basic scalars and composite types such as record, array, map and union.
 
-It also support logical types which are annotations on other basic types and are used to indicate s specific interpretation of the data such as temporal values.
+It also support logical types which are annotations on other basic types and are used to indicates specific interpretation of the data such as temporal values.
 
 Note that Avro data is not self describing, it requires a schema to be defined and used during both the encoding and decoding process. 
 
@@ -10,7 +10,7 @@ Note that Avro data is not self describing, it requires a schema to be defined a
 
 An Avro record contains [a set of fields where each field has its own datatype](https://avro.apache.org/docs/1.11.1/specification/#schema-record).
 
-The kdb+ representation of a record is a 99h where the dictionary keys are a 11h and the dictionary values are a 0h.  Each item is the dictionary values mixed list has the kdb+ type corresponding to that field's datatype.
+The kdb+ representation of a record is a 99h where the dictionary keys are a 11h and the dictionary values are a 0h.  Each item in the dictionary values mixed list has the kdb+ type corresponding to that field's datatype.
 
 In order to prevent type promotion where all the fields have the same datatype (although an Avro map would be more suitable for this use case) a null symbol key with corresponding generic null (::) value should be added to the dictionary (and is ignored).  For consistency `avrokdb` also adds a null symbol key with corresponding generic null (::) as the first item in the dictionary when decoding a record. 
 
