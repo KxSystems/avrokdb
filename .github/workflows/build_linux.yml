@@ -20,7 +20,7 @@ jobs:
     env:
       AVRO_INSTALL: ${{ github.workspace }}/cbuild/install
       OUTPUT_FILE: avrokdb-linux.tgz
-      QHOME: ${{ github.workspace }}/q
+      QHOME: ${{ github.workspace }}/qhome
 
     steps:
       - name: Install build tools
@@ -53,14 +53,14 @@ jobs:
           cd lang/c++ &&
           mkdir build &&
           cd build &&
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_INSTALL_PREFIX=${{ env.AVRO_INSTALL }} .. &&
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_INSTALL_PREFIX="$AVRO_INSTALL" .. &&
           cmake --build . --config Release &&
           cmake --build . --config Release --target install &&
           cd ../../../..
 
       - name: Build 
         run: |
-          mkdir $QHOME && mkdir cmake && cd cmake && cmake .. -DQMOD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DAVRO_INSTALL=${{ env.AVRO_INSTALL }} -DCMAKE_INSTALL_PREFIX="$QHOME/kx" && make install && cd .. && tar  -zcvf "$OUTPUT_FILE" -C $QHOME .
+          mkdir -p "$QHOME" && mkdir -p cmake && cd cmake && cmake .. -DQMOD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_PREFIX_PATH="$AVRO_INSTALL" -DCMAKE_INSTALL_PREFIX="$QHOME/kx" && make install && cd .. && tar -zcvf "$OUTPUT_FILE" -C "$QHOME" .
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v6
