@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     env:
       AVRO_INSTALL: ${{ github.workspace }}\cbuild\install
@@ -29,9 +29,9 @@ jobs:
         with:
           path: |
             cbuild/install
-          key: ${{ runner.os }}-avro
+          key: ${{ runner.os }}-avro-vs2022
           restore-keys: |
-            ${{ runner.os }}-avro
+            ${{ runner.os }}-avro-vs2022
 
       - name: Get avro
         if: steps.cache-avro.outputs.cache-hit != 'true'
@@ -53,7 +53,8 @@ jobs:
         run: |
           mkdir cmake
           cd cmake
-          cmake -G "Visual Studio 17 2022" -DCMAKE_CXX_STANDARD=17 -DAVRO_INSTALL="${{ env.AVRO_INSTALL }}" ..
+          cd ${{ env.QHOME}}
+          cmake -G "Visual Studio 17 2022" -DQMOD=ON -DCMAKE_CXX_STANDARD=17 -DAVRO_INSTALL="${{ env.AVRO_INSTALL }}" -DCMAKE_INSTALL_PREFIX="${{ env.QHOME }}/kx" ..
           cmake --build . --config Release
           cmake --build . --config Release --target install
           cd ..
