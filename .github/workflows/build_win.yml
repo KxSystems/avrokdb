@@ -12,12 +12,12 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     env:
       AVRO_INSTALL: ${{ github.workspace }}\cbuild\install
       OUTPUT_FILE: avrokdb-win.tgz
-      QHOME: ${{ github.workspace }}\q
+      QHOME: ${{ github.workspace }}\qhome
 
     steps:
       - name: Checkout code
@@ -29,9 +29,9 @@ jobs:
         with:
           path: |
             cbuild/install
-          key: ${{ runner.os }}-avro
+          key: ${{ runner.os }}-avro-vs2022
           restore-keys: |
-            ${{ runner.os }}-avro
+            ${{ runner.os }}-avro-vs2022
 
       - name: Get avro
         if: steps.cache-avro.outputs.cache-hit != 'true'
@@ -51,13 +51,14 @@ jobs:
 
       - name: Build 
         run: |
+          mkdir ${{ env.QHOME }}
           mkdir cmake
           cd cmake
-          cmake -G "Visual Studio 17 2022" -DCMAKE_CXX_STANDARD=17 -DAVRO_INSTALL="${{ env.AVRO_INSTALL }}" ..
+          cmake -G "Visual Studio 17 2022" -DQMOD=ON -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH="${{ env.AVRO_INSTALL }}" -DCMAKE_INSTALL_PREFIX="${{ env.QHOME }}/kx" ..
           cmake --build . --config Release
           cmake --build . --config Release --target install
           cd ..
-          7z a -tzip -r "${{ env.OUTPUT_FILE }}" cmake\avrokdb\*
+          7z a -tzip -r "${{ env.OUTPUT_FILE }}" ${{ env.QHOME }}\*
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v6
