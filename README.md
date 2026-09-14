@@ -36,8 +36,27 @@ Avro relies on schemas which are defined with JSON. When Avro data is read, the 
 
 ### Requirements
 
+If you are installing as a module using qmamba:
+- kdb-x (Linux/MacOS/Windows)
+- [qmamba](https://github.com/KxSystems/qmamba)
+
+If you are building from source or install from a release:
 - kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
 - Avro C++ libraries
+
+### Install module with qmamba
+
+qmamba is a package manager for kdb-x. It is currently available in a private preview capacity. You are welcome to try it and provide feedback.
+Follow the install instructions for [qmamba](https://github.com/KxSystems/qmamba/blob/main/README.md#installation).
+
+```q
+qmamba:use`kx.qmamba
+qmamba.create "myenv"
+qmamba.activate "myenv"
+qmamba.install `SPECS`CHANNEL!(enlist "q-kx-avro";("kx";"conda-forge"))
+avro:use`kx.avro
+```
+
 
 ### Installing a release
 
@@ -46,8 +65,14 @@ It is recommended that a user install this interface using a release package. Th
 1. [Install the required dependencies](#third-party-library-installation)
 1. [Download a release](https://github.com/KxSystems/avrokdb/releases) and then unzip to your module directory. The following example assumes the default install location for KDB-X.
 
-```
+```bash
 unzip avro-l64.zip -d ~/.kx/mod
+```
+Then you can load it as a module
+```q
+q).Q.m.SP
+"/home/user/.kx/mod"
+q)avro:use`kx.avro
 ```
 
 ## Building and installing from source
