@@ -1,5 +1,5 @@
 context:
-  version: "2.0.1"
+  version: ${{ env.get("PKG_VERSION", default="0.0.0") }}
 
 package:
   name: q-kx-avro
@@ -48,3 +48,18 @@ tests:
       then:
         - if not exist %PREFIX%\\lib\\q\\mod\\kx\\avro\\init.q exit 1
         - if not exist %PREFIX%\\lib\\q\\mod\\kx\\\avro\\clib.wi64.dll exit 1
+
+about:
+  homepage: https://github.com/KxSystems/avrokdb
+  repository: https://github.com/KxSystems/avrokdb
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: kdb-x APIs to encode and decode Apache Avro serialized data.
+  description: |
+    This interface allows kdb-x users to encode and decode Apache Avro
+    serialized data. Apache Avro is a data serialization system that provides
+    rich data structures and a compact, fast, binary data format. Avro relies
+    on schemas defined with JSON, so each datum can be written with no
+    per-value overhead, making serialization both fast and small.
+
+    Once installed, load the module in q with: avro:use`kx.avro
