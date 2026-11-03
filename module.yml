@@ -1,0 +1,24 @@
+name: q-kx-avro
+description: >-
+  kdb-x APIs to encode and decode Apache Avro serialized data.
+homepage: https://github.com/KxSystems/avrokdb
+namespace: kx.avro
+
+source:
+  repo: https://github.com/KxSystems/avrokdb
+  ref: 2.0.0
+  path: .
+
+license: Apache-2.0
+
+maintainers:
+  - github: KxSystems
+
+platforms:
+  - linux
+  - linux-arm
+  - mac
+  - mac-arm
+
+compatibility:
+  kdbx: ">=5.0.0"
