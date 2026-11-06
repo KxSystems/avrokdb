@@ -43,7 +43,7 @@ Avro relies on schemas which are defined with JSON. When Avro data is read, the 
 It is recommended that a user install this interface using a release package. This is completed in a number of steps:
 
 1. If running on Windows, ensure you have downloaded/installed the Avro C++ libraries following the instructions [here](#windows).  This step is not necessary on Linux or macOS because their `avrokdb` release packages are statically linked with `libavrocpp`.
-2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture.
+2. [Download a release](https://github.com/KxSystems/avrokdb/releases) for your system architecture. Latest release for kdb+ is [1.0.0](https://github.com/KxSystems/avrokdb/releases/tag/1.0.0)
 3. Install script `avrokdb.q` to `$QHOME`, and binary file `lib/arrowkdb.(so|dll)` to `$QHOME/[mlw](64)`, by executing the following from the unzipped release package directory:
 
 ```bash
