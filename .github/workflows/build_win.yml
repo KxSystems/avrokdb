@@ -17,7 +17,7 @@ jobs:
     env:
       AVRO_INSTALL: ${{ github.workspace }}\cbuild\install
       OUTPUT_FILE: avrokdb-win.tgz
-      QHOME: ${{ github.workspace }}\qhome
+      PKG_DIR: ${{ github.workspace }}\pkg
 
     steps:
       - name: Checkout code
@@ -51,14 +51,14 @@ jobs:
 
       - name: Build 
         run: |
-          mkdir ${{ env.QHOME }}
+          mkdir ${{ env.PKG_DIR }}
           mkdir cmake
           cd cmake
-          cmake -G "Visual Studio 17 2022" -DQMOD=ON -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH="${{ env.AVRO_INSTALL }}" -DCMAKE_INSTALL_PREFIX="${{ env.QHOME }}/kx" ..
+          cmake -G "Visual Studio 17 2022" -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH="${{ env.AVRO_INSTALL }}" -DCMAKE_INSTALL_PREFIX="${{ env.PKG_DIR }}/kx" ..
           cmake --build . --config Release
           cmake --build . --config Release --target install
           cd ..
-          7z a -tzip -r "${{ env.OUTPUT_FILE }}" ${{ env.QHOME }}\*
+          7z a -tzip -r "${{ env.OUTPUT_FILE }}" ${{ env.PKG_DIR }}\*
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v6
