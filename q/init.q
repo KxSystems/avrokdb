@@ -1,5 +1,4 @@
-if[5>.z.K;system"d .avrokdb"]
-clib:$[5<=.z.K;use`.clib;(`avrokdb 2:(`kexport;1))[]]
+clib:use`.clib
 
 // Create a compiled Avro schema from a JSON file
 schemaFromFile:clib.SchemaFromFile
@@ -13,10 +12,10 @@ getSchema:clib.GetSchema
 // Display the JSON representation of an Avro compiled schema
 printSchema:{-1 getSchema[x];};
 
-// Encode kdb+ object to Avro serialised data
+// Encode KDB-X object to Avro serialised data
 encode:clib.Encode
 
-// Decode Avro serialised data to a kdb+ object
+// Decode Avro serialised data to a KDB-X object
 decode:clib.Decode
 
-if[5<=.z.K;export:([schemaFromFile;schemaFromString;getSchema;printSchema;encode;decode])]
+export:([schemaFromFile;schemaFromString;getSchema;printSchema;encode;decode])

@@ -1,4 +1,4 @@
-$[5<=.z.K;.avrokdb:use`kx.avro;system"l q/init.q"];
+.avrokdb:use`kx.avro;
 
 -1 "\n<----- Record of scalar types ----->\n";
 sc:.avrokdb.schemaFromFile["examples/scalars.avsc"];

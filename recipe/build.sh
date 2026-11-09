@@ -16,7 +16,7 @@ else
     OSX_ARCH=$(uname -m)
 fi
 
-cmake .. -DQMOD=ON \
+cmake .. \
       -DCMAKE_INSTALL_PREFIX=$PREFIX/lib/q/mod/kx \
       -DAVRO_INSTALL=$BUILD_PREFIX \
       -DBOOST_INSTALL=$BUILD_PREFIX \

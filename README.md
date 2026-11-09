@@ -7,15 +7,15 @@
 
 ## Introduction
 
-This interface allows kdb+ users encode and decode Apache Avro serialized data.
+This interface allows KDB-X users encode and decode Apache Avro serialized data.
 
-This is part of the [*Fusion for kdb+*](http://code.kx.com/q/interfaces/fusion/) interface collection.
+Note: This interface is a KDB-X module. If you use kdb+, use the latest compatible release, [1.0.0](https://github.com/KxSystems/avrokdb/releases/tag/1.0.0).
 
 
 
-## New to kdb+ ?
+## New to KDB-X ?
 
-Kdb+ is the world's fastest time-series database, optimized for  ingesting, analyzing and storing massive amounts of structured data. To  get started with kdb+, please visit https://code.kx.com/q/ for downloads and developer information. For general information, visit https://kx.com/
+KDB-X is the world's fastest timeseries database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with KDB-X, please visit https://code.kx.com/ for downloads and developer information. For general information, visit https://kx.com/
 
 
 
@@ -41,7 +41,7 @@ If you are installing as a module using qmamba:
 - [qmamba](https://github.com/KxSystems/qmamba)
 
 If you are building from source or install from a release:
-- kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
+- KDB-X ≥ 5.0.0 64-bit (Linux/macOS/Windows)
 - Avro C++ libraries
 
 ### Install module with qmamba
@@ -79,7 +79,7 @@ q)avro:use`kx.avro
 
 ### Requirements
 
-- kdb+ ≥ 3.5 64-bit (Linux/macOS/Windows)
+- KDB-X ≥ 5.0.0 64-bit (Linux/macOS/Windows)
 - Apache Avro C++ libraries
 - C++11 or later and 
 - CMake ≥ 3.1.3
@@ -138,10 +138,10 @@ On linux `avrocpp` should be built from source.
      cmake --build . --config Release --target install
    ```
 
-6. Copy the shared object to `$QHOME/l64`:
+6. Copy the shared object to the module directory, alongside the avrokdb library (`kx/avro` under your KDB-X module path, for example `~/.kx/mod`):
 
    ```bash
-   cp $AVRO_INSTALL/lib/libavrocpp.so $QHOME/l64
+   cp $AVRO_INSTALL/lib/libavrocpp.so ~/.kx/mod/kx/avro/
    ```
 
 #### macOS
@@ -172,25 +172,22 @@ On Windows `avrocpp` should be built using [vcpkg](https://vcpkg.io/en/):
    set AVRO_INSTALL=%cd%\installed\x64-windows
    ```
 
-3. Copy the DLLs to `$QHOME\w64`:
+3. Copy the DLLs to the module directory, alongside the avrokdb library (`kx\avro` under your KDB-X module path, for example `%USERPROFILE%\.kx\mod`):
 
    ```bash
    cd installed\x64-windows\bin
-   copy avrocpp.dll %QHOME%\w64
-   copy boost_iostreams-vc143-mt-x64-*.dll %QHOME%\w64
-   copy liblzma.dll %QHOME%\w64
-   copy zstd.dll %QHOME%\w64
-   copy bz2.dll %QHOME%\w64
-   copy zlib1.dll %QHOME%\w64
+   copy avrocpp.dll %USERPROFILE%\.kx\mod\kx\avro
+   copy boost_iostreams-vc143-mt-x64-*.dll %USERPROFILE%\.kx\mod\kx\avro
+   copy liblzma.dll %USERPROFILE%\.kx\mod\kx\avro
+   copy zstd.dll %USERPROFILE%\.kx\mod\kx\avro
+   copy bz2.dll %USERPROFILE%\.kx\mod\kx\avro
+   copy zlib1.dll %USERPROFILE%\.kx\mod\kx\avro
    ```
 
 
 ### Building avrokdb
 
-In order to successfully build and install this interface from source, the following environment variables must be set:
-
-1. `QHOME` = Q installation directory (directory containing `q.k`)
-2. if `avrocpp` or `boost` is not installed globally, add `-DCMAKE_PREFIX_PATH=<your/install/path>` to cmake
+In order to successfully build and install this interface from source, if `avrocpp` or `boost` is not installed globally, add `-DCMAKE_PREFIX_PATH=<your/install/path>` to cmake.
 
 From a shell prompt (on Linux/macOS) or Visual Studio command prompt (on Windows), clone the `avrokdb` source from github:
 
@@ -201,7 +198,7 @@ cd avrokdb
 
 Create the cmake build directory and generate the build files (this will use the system's default cmake generator):
 
-If you want to create avrokdb as a KDB-X module, add `-DQMOD=ON` and `-DCMAKE_INSTALL_PREFIX="<kx/module/path>"`
+To install avrokdb into your KDB-X module directory, add `-DCMAKE_INSTALL_PREFIX="<kx/module/path>"` (for example `~/.kx/mod/kx`). The module is installed to `<kx/module/path>/avro`.
 
 ```bash
 mkdir build
@@ -223,7 +220,7 @@ Start the build:
 cmake --build . --config Release
 ```
 
-Create the install package and deploy to `$QHOME`:
+Install the module to the `CMAKE_INSTALL_PREFIX` path set above:
 
 ```bash
 cmake --build . --config Release --target install

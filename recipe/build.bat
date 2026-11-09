@@ -5,7 +5,6 @@ set BUILD_TYPE=RelWithDebInfo
 ::set BUILD_TYPE=Debug
 
 cmake -G "NMake Makefiles" ^
-      -DQMOD=ON ^
       -DCMAKE_INSTALL_PREFIX="%PREFIX%\lib\q\mod\kx" ^
       -DAVRO_INSTALL=%BUILD_PREFIX% ^
       -DBOOST_INSTALL=%BUILD_PREFIX% ^

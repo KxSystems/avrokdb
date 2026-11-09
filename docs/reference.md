@@ -1,6 +1,6 @@
 # Function reference
 
-These functions are exposed within the `avrokdb` module, allowing users to convert data between Avro and kdb+.
+These functions are exposed within the `avrokdb` module, allowing users to convert data between Avro and KDB-X.
 **Note:** In the documentation we use `.avrokdb` to import `kx.avro` with ```.avrokdb: use `kx.avro```
 
 
@@ -13,8 +13,8 @@ object | use
 [`schemaFromString`](#schemaFromString) | Create a compiled Avro schema from a JSON string
 [`getSchema`](#getSchema) | Return the JSON representation of an Avro compiled schema
 [`printSchema`](#printSchema) | Display the JSON representation of an Avro compiled schema
-[`encode`](#encode) | Encode kdb+ object to Avro serialised data
-[`decode`](#decode) | Decode Avro serialised data to a kdb+ object
+[`encode`](#encode) | Encode KDB-X object to Avro serialised data
+[`decode`](#decode) | Decode Avro serialised data to a KDB-X object
 
 
 
@@ -129,7 +129,7 @@ q).avrokdb.printSchema[schema]
 
 ### `encode`
 
-*Encode kdb+ object to Avro serialised data*
+*Encode KDB-X object to Avro serialised data*
 
 ```txt
 .avrokdb.encode[schema;input;options]
@@ -138,14 +138,14 @@ q).avrokdb.printSchema[schema]
 where:
 
 * `schema` is a foreign object containing a compiled Avro schema.
-* `input` is the kdb+ object to encode.  Must adhere to the appropriate [type mappings](./type-mapping.md) for the schema.
-* `options` is a kdb+ dictionary of options or generic null (::) to use the defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h or mixed list of -7|-11|4h.
+* `input` is the KDB-X object to encode.  Must adhere to the appropriate [type mappings](./type-mapping.md) for the schema.
+* `options` is a KDB-X dictionary of options or generic null (::) to use the defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h or mixed list of -7|-11|4h.
 
 The function returns Avro serialised data, either 4h for binary encoding or 10h for JSON encoding.
 
 Supported options:
 
-- `AVRO_FORMAT`- String identifying whether the kdb+ object should be encoded into Avro binary or JSON format.  Valid options `BINARY`, `JSON` or `JSON_PRETTY`, default `BINARY`.
+- `AVRO_FORMAT`- String identifying whether the KDB-X object should be encoded into Avro binary or JSON format.  Valid options `BINARY`, `JSON` or `JSON_PRETTY`, default `BINARY`.
 - `MULTITHREADED` - Long flag.  By default avrokdb is optimised to reuse the existing encoder for this schema.  However, Avro encoders do not support concurrent access and therefore if running `encode` with `peach` this option **must** be set to non-zero to disable this optimisation.  Default 0.
 
 ```q
@@ -173,7 +173,7 @@ q)-1 .avrokdb.encode[schema;input;(enlist `AVRO_FORMAT)!enlist `JSON_PRETTY];
 
 ### `decode`
 
-*Decode Avro serialised data to a kdb+ object*
+*Decode Avro serialised data to a KDB-X object*
 
 ```txt
 .avrokdb.decode[schema;input;options]
@@ -183,9 +183,9 @@ where:
 
 * `schema` is a foreign object containing a compiled Avro schema.
 * `input` is 4h or 10h list of Avro serialised data.
-* `options` is a kdb+ dictionary of options or generic null (::) to use the defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h or mixed list of -7|-11|4h.
+* `options` is a KDB-X dictionary of options or generic null (::) to use the defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h or mixed list of -7|-11|4h.
 
-The function returns a kdb+ object representing the Avro data having applied the appropriate [type mappings](./type-mapping.md) for the schema
+The function returns a KDB-X object representing the Avro data having applied the appropriate [type mappings](./type-mapping.md) for the schema
 
 Supported options:
 

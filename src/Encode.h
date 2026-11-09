@@ -2,11 +2,11 @@
 
 extern "C"
 {
-  /// @brief Encode kdb+ object to Avro serialised data
+  /// @brief Encode KDB-X object to Avro serialised data
   ///
   /// Supported options:
   ///
-  /// * AVRO_FORMAT (string).  Describes whether the kdb+ object should be
+  /// * AVRO_FORMAT (string).  Describes whether the KDB-X object should be
   /// encoded into Avro binary or JSON format.  Valid options "BINARY", "JSON"
   /// or "JSON_PRETTY", default "BINARY".
   ///
@@ -18,10 +18,10 @@ extern "C"
   /// @param schema.  Foreign object containing the Avro schema to use for
   /// encoding. 
   ///
-  /// @param data.  Kdb+ object to encode.  Must adhere to the appropriate type
+  /// @param data.  KDB-X object to encode.  Must adhere to the appropriate type
   /// mapping for the schema.
   ///
-  /// @param options. kdb+ dictionary of options or generic null(::) to use the
+  /// @param options. KDB-X dictionary of options or generic null(::) to use the
   /// defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h
   /// or mixed list of -7|-11|4h.
   ///

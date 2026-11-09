@@ -4,7 +4,7 @@
 
 typedef signed char KdbType;
 
-// Map avro types and logical types to a kdb+ type
+// Map avro types and logical types to a KDB-X type
 KdbType GetKdbArrayType(avro::Type type, avro::LogicalType::Type logical_type);
 KdbType GetKdbSimpleType(avro::Type type, avro::LogicalType::Type logical_type);
 KdbType GetKdbType(const avro::GenericDatum& datum, bool decompose_union);
@@ -84,6 +84,6 @@ class TypeCheckKdb : public TypeCheck
 {
 public:
   TypeCheckKdb(const std::string& field, const std::string& datatype, const std::string& what, int64_t expected, int64_t received) :
-    TypeCheck("Invalid kdb+ mapping, field: '" + field + "', datatype: '" + datatype + "', " + what + " expected: " + std::to_string(expected) + ", received : " + std::to_string(received))
+    TypeCheck("Invalid KDB-X mapping, field: '" + field + "', datatype: '" + datatype + "', " + what + " expected: " + std::to_string(expected) + ", received : " + std::to_string(received))
   {};
 };

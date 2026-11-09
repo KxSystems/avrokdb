@@ -2,7 +2,7 @@
 
 extern "C"
 {
-  /// @brief Decode Avro serialised data to a kdb+ object
+  /// @brief Decode Avro serialised data to a KDB-X object
   ///
   /// Supported options:
   ///
@@ -24,11 +24,11 @@ extern "C"
   ///
   /// @param data.  4h or 10h list of Avro serialised data.
   ///
-  /// @param options. kdb+ dictionary of options or generic null(::) to use the
+  /// @param options. KDB-X dictionary of options or generic null(::) to use the
   /// defaults.  Dictionary key must be a 11h list.  Values list can be 7h, 11h
   /// or mixed list of -7|-11|4h.
   ///
-  /// @return kdb+ object representing the Avro data having applied the
+  /// @return KDB-X object representing the Avro data having applied the
   /// appropriate type mappings
   K Decode(K schema, K data, K options);
 }
